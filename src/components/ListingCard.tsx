@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { QuoteResult } from '../types'
 import { fmtYen, monthlyAmount, monthlySuffix } from '../price'
+import { SOURCES } from '../sources'
 import type { UniversalListing } from '../sources'
 
 interface Props {
@@ -51,6 +52,7 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
   const station = listing.nearestStations[0]
   const chips = amenityChips(listing)
   const url = listing.sourceUrl
+  const priceNote = SOURCES.find((s) => s.id === listing.source)?.priceNote
 
   return (
     <div
@@ -108,6 +110,7 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
           <span className="listing-price">{fmtYen(amount)}</span>
           <span className="listing-price-suffix">{monthlySuffix()}</span>
         </div>
+        {priceNote && <div className="listing-price-note">Price note: {priceNote}</div>}
 
         <div className="listing-name">{listing.name}</div>
 

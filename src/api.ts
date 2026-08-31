@@ -54,7 +54,7 @@ export async function searchListings(form: SearchFormState, page: number, itemsP
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '' && v !== false) qs.set(k, String(v))
   }
-  const res = await fetch(`${API_BASE}/search_listings_with_room_type/location_name_and_conditions?${qs.toString()}`)
+  const res = await fetch(`${API_BASE}/search_listings_with_room_type/location_name_and_conditions?${qs.toString()}`, { signal: AbortSignal.timeout(20000) })
   if (!res.ok) throw new Error(`Search failed: ${res.status}`)
   return (await res.json()) as SearchResponse
 }
@@ -66,6 +66,7 @@ export async function fetchQuotes(listingIds: string[], startDate: string, endDa
   for (const chunk of chunks) {
     const res = await fetch(`${API_BASE}/quotation_estimates`, {
       method: 'POST',
+      signal: AbortSignal.timeout(20000),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ listingIds: chunk, staySpan: { startDate, endDate }, persons }),
     })
@@ -79,7 +80,12 @@ export async function fetchQuotes(listingIds: string[], startDate: string, endDa
 export async function autocompletePlace(q: string): Promise<PlaceSuggestion[]> {
   if (!q.trim()) return []
   const qs = new URLSearchParams({ q, limit: '7' })
-  const res = await fetch(`${PHOTON_BASE}?${qs.toString()}`)
+  let res: Response
+  try {
+    res = await fetch(`${PHOTON_BASE}?${qs.toString()}`, { signal: AbortSignal.timeout(10000) })
+  } catch {
+    return []
+  }
   if (!res.ok) return []
   const json = (await res.json()) as {
     features: Array<{
@@ -130,7 +136,12 @@ export interface ReverseGeocodeResult {
 }
 
 export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult | null> {
-  const res = await fetch(`${PHOTON_REVERSE}?lat=${lat}&lon=${lng}`)
+  let res: Response
+  try {
+    res = await fetch(`${PHOTON_REVERSE}?lat=${lat}&lon=${lng}`, { signal: AbortSignal.timeout(10000) })
+  } catch {
+    return null
+  }
   if (!res.ok) return null
   const json = (await res.json()) as {
     features: Array<{ properties: { name?: string; district?: string; city?: string; state?: string; country?: string; county?: string } }>
@@ -158,21 +169,4 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
   const dLng = toRad(lng2 - lng1)
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(a))
-}
-
-const geocodeCache = new Map<string, { lat: number; lng: number } | null>()
-
-export async function geocodePlace(q: string): Promise<{ lat: number; lng: number } | null> {
-  const key = q.trim().toLowerCase()
-  if (geocodeCache.has(key)) return geocodeCache.get(key) ?? null
-  const qs = new URLSearchParams({ q, limit: '1' })
-  const res = await fetch(`${PHOTON_BASE}?${qs.toString()}`)
-  let out: { lat: number; lng: number } | null = null
-  if (res.ok) {
-    const json = (await res.json()) as { features?: Array<{ geometry: { coordinates: [number, number] } }> }
-    const f = json.features?.[0]
-    if (f) out = { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }
-  }
-  geocodeCache.set(key, out)
-  return out
 }

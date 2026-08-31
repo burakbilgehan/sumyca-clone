@@ -10,8 +10,8 @@ let cachedRooms: UniversalListing[] | null = null
 async function loadRooms(): Promise<UniversalListing[]> {
   if (cachedRooms && Date.now() - cacheAt < CACHE_MS) return cachedRooms
   const [roomsRes, catsRes] = await Promise.all([
-    fetch(`${TF_API}/mphb_room_type?per_page=100&_embed`),
-    fetch(`${TF_API}/mphb_room_type_category?per_page=100`),
+    fetch(`${TF_API}/mphb_room_type?per_page=100&_embed`, { signal: AbortSignal.timeout(20000) }),
+    fetch(`${TF_API}/mphb_room_type_category?per_page=100`, { signal: AbortSignal.timeout(20000) }),
   ])
   if (!roomsRes.ok || !catsRes.ok) throw new Error(`Tokyo Furnished failed: ${roomsRes.status}`)
   const rooms = (await roomsRes.json()) as Array<{
@@ -88,6 +88,7 @@ export const tokyoFurnishedAdapter: SourceAdapter = {
   color: '#f59e0b',
   perPage: 100,
   clientRadius: true,
+  priceNote: 'base rent, utilities may be extra',
   supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: true, instant: false },
   async search(form: SearchFormState): Promise<SourceSearchResult> {
     const rooms = await loadRooms()

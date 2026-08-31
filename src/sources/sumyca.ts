@@ -14,6 +14,7 @@ export const sumycaAdapter: SourceAdapter = {
   color: SUMYCA_COLOR,
   perPage: 50,
   clientRadius: false,
+  priceNote: 'all-inclusive (incl. utilities)',
   supports: { cost: true, size: true, walk: true, buildYear: true, guestsOver2: true, instant: true },
   async search(form: SearchFormState, page: number): Promise<SourceSearchResult> {
     const res = await searchListings(form, page, this.perPage)

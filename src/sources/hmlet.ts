@@ -21,6 +21,7 @@ export const hmletAdapter: SourceAdapter = {
   color: '#4f46e5',
   perPage: 12,
   clientRadius: true,
+  priceNote: 'utilities incl., one-time service fee extra',
   supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: false, instant: false },
   async search(form: SearchFormState, page: number): Promise<SourceSearchResult> {
     const gcc = CITY_IDS.find(([re]) => re.test(form.locationName))?.[1]
@@ -36,7 +37,7 @@ export const hmletAdapter: SourceAdapter = {
       qs.set('check_in', form.startDate)
       qs.set('check_out', form.endDate)
     }
-    const res = await fetch(`${HMLET_API}/v1/units?${qs.toString()}`)
+    const res = await fetch(`${HMLET_API}/v1/units?${qs.toString()}`, { signal: AbortSignal.timeout(15000) })
     if (!res.ok) throw new Error(`Hmlet failed: ${res.status}`)
     const json = (await res.json()) as {
       totalResults: number

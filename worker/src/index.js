@@ -180,10 +180,34 @@ async function buildInventory(cache) {
 async function handleBlueground(url) {
   const qs = url.search || ''
   const upstream = `${BLUEGROUND_UPSTREAM}/api/sp${qs}`
-  const res = await fetch(upstream, { headers: { 'User-Agent': UA, Accept: 'application/json' } })
+  const res = await timeoutFetch(upstream, 20000, { Accept: 'application/json' })
   if (!res.ok) return new Response(await res.text(), { status: res.status, headers: CORS })
   const json = await res.json()
   return new Response(JSON.stringify(json), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
+}
+
+// Birden fazla property'nin rent-breakdown'unu tek istekte toplar (kira + utility + sigorta toplamı)
+async function handleBreakdowns(url) {
+  const ids = (url.searchParams.get('ids') ?? '').split(',').filter(Boolean)
+  const marketCode = url.searchParams.get('marketCode') ?? 'TYO'
+  const currency = url.searchParams.get('currency') ?? 'JPY'
+  const checkIn = url.searchParams.get('checkIn') ?? ''
+  const checkOut = url.searchParams.get('checkOut') ?? ''
+  const out = {}
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const q = new URLSearchParams({ marketCode, currency, checkIn, checkOut })
+        const res = await timeoutFetch(`${BLUEGROUND_UPSTREAM}/api/sp/property/${id}/rent-breakdown?${q}`, 10000, {
+          Accept: 'application/json',
+        })
+        if (res.ok) out[id] = await res.json()
+      } catch {
+        // tek property başarısızsa atlasın
+      }
+    }),
+  )
+  return new Response(JSON.stringify(out), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } })
 }
 
 export default {
@@ -193,6 +217,9 @@ export default {
     try {
       if (url.pathname === '/proxy/blueground') {
         return await handleBlueground(url)
+      }
+      if (url.pathname === '/proxy/blueground-breakdowns') {
+        return await handleBreakdowns(url)
       }
       if (url.pathname === '/sources/exflats') {
         const items = await buildInventory(caches.default)

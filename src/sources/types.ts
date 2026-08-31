@@ -25,6 +25,8 @@ export interface SourceAdapter {
   perPage: number
   /** radius filtresini istemci tarafında haversine ile uygula (sumyca API'de native yapıyor) */
   clientRadius: boolean
+  /** Fiyatın neyi kapsadığına dair kartta gösterilen dürüst not */
+  priceNote: string
   /** Aktif filtre bu kaynakta değerlendirilemiyorsa kaynak atlanır */
   supports: {
     cost: boolean

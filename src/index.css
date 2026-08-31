@@ -569,6 +569,12 @@ body.dragging-panel iframe {
   color: var(--text-secondary);
 }
 
+.listing-price-note {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
 .listing-name {
   font-size: 14px;
   line-height: 20px;

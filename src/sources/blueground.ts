@@ -6,7 +6,7 @@ import type { SourceAdapter, SourceSearchResult, UniversalListing } from './type
 const BG_PLACE_ID = 'ct-eyJ0eXBlIjoiY2l0eSIsImxhdCI6MzUuNjc2NDIyNSwibG5nIjoxMzkuNjUwMDI3fQ'
 
 interface BgProperty {
-  id: string
+  id: number
   name: string
   path: string
   bedrooms: number
@@ -25,16 +25,30 @@ function thumb(url: string): string {
   return url.replace('/736/', '/240/')
 }
 
+function spanDays(start: string, end: string): number {
+  const a = new Date(`${start}T00:00:00`).getTime()
+  const b = new Date(`${end}T00:00:00`).getTime()
+  return Math.max(1, Math.round((b - a) / 86400000))
+}
+
 export const bluegroundAdapter: SourceAdapter = {
   id: 'blueground',
   name: 'Blueground',
   color: '#0ea5e9',
   perPage: 18,
   clientRadius: true,
+  priceNote: 'rent + utilities + insurance',
   supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: true, instant: false },
   async search(form: SearchFormState, page: number): Promise<SourceSearchResult> {
     if (!WORKER_BASE) return emptyResult('proxy not configured (VITE_WORKER_BASE)')
     if (!/tokyo/i.test(form.locationName)) return emptyResult()
+    // tarih verilmediyse bugünden değil, uygunluk penceresi açık olsun diye +14 günden başlat;
+    // konaklama 1 aydan kısaysa 30 geceye yuvarla (BG minimum ~1 ay kabul ediyor)
+    const start = form.startDate || addDays(todayStr(), 14)
+    let end = form.endDate || addDays(start, 30)
+    if (spanDays(start, end) < 30) end = addDays(start, 30)
+    const days = spanDays(start, end)
+
     const qs = new URLSearchParams({
       marketCode: 'TYO',
       placeId: BG_PLACE_ID,
@@ -43,9 +57,6 @@ export const bluegroundAdapter: SourceAdapter = {
       offset: String(page * this.perPage),
       language: 'en',
     })
-    // tarih verilmediyse bugünden değil, uygunluk penceresi açık olsun diye +14 günden başlat
-    const start = form.startDate || addDays(todayStr(), 14)
-    const end = form.endDate || addDays(start, 30)
     qs.set('checkIn', start)
     qs.set('checkOut', end)
     if (form.minCost) qs.set('priceFrom', String(form.minCost))
@@ -54,14 +65,29 @@ export const bluegroundAdapter: SourceAdapter = {
     qs.set('bedrooms', String(bedrooms))
     if (!/^\s*tokyo\s*$/i.test(form.locationName)) qs.set('query', form.locationName)
 
-    const res = await fetch(`${WORKER_BASE}/proxy/blueground?${qs.toString()}`)
+    const res = await fetch(`${WORKER_BASE}/proxy/blueground?${qs.toString()}`, { signal: AbortSignal.timeout(25000) })
     if (!res.ok) throw new Error(`Blueground failed: ${res.status}`)
     const json = (await res.json()) as { totalItems: number; properties?: { main?: BgProperty[] } }
+    const main = json.properties?.main ?? []
+
+    // cebinden çıkan para: rent-breakdown toplamı (kira + utility + sigorta)
+    let breakdowns: Record<string, { totalAmount?: number }> = {}
+    const ids = main.map((p) => String(p.id)).filter(Boolean)
+    if (ids.length > 0) {
+      try {
+        const bqs = new URLSearchParams({ ids: ids.join(','), marketCode: 'TYO', currency: 'JPY', checkIn: start, checkOut: end })
+        const br = await fetch(`${WORKER_BASE}/proxy/blueground-breakdowns?${bqs.toString()}`, { signal: AbortSignal.timeout(30000) })
+        if (br.ok) breakdowns = (await br.json()) as Record<string, { totalAmount?: number }>
+      } catch {
+        breakdowns = {}
+      }
+    }
 
     const listings: UniversalListing[] = []
-    for (const p of json.properties?.main ?? []) {
-      const amount = p.rent.amount || p.baseRent.amount
-      if (!amount || !p.address?.lat) continue
+    for (const p of main) {
+      const bd = breakdowns[String(p.id)]
+      const monthly = bd?.totalAmount ? (bd.totalAmount * 30) / days : p.rent.amount || p.baseRent.amount
+      if (!monthly || !p.address?.lat) continue
       const photo = p.photos?.[0]?.url
       listings.push({
         id: `blueground:${p.id}`,
@@ -69,7 +95,7 @@ export const bluegroundAdapter: SourceAdapter = {
         layoutType: `${p.bedrooms}BR`,
         size: p.lotSize ?? 0,
         maxNumberOfGuests: (p.bedrooms ?? 1) * 2,
-        totalDailyCost: amount / 30,
+        totalDailyCost: monthly / 30,
         mainImageUrl: photo ?? '',
         mainImageThumbnailUrl: photo ? thumb(photo) : '',
         location: { lat: p.address.lat, lng: p.address.lng },
