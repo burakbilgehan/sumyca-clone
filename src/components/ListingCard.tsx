@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import type { Listing, QuoteResult } from '../types'
+import type { QuoteResult } from '../types'
 import { fmtYen, monthlyAmount, monthlySuffix } from '../price'
+import type { UniversalListing } from '../sources'
 
 interface Props {
-  listing: Listing
+  listing: UniversalListing
   quote?: QuoteResult
   highlighted: boolean
   onHover: (id: string | null) => void
@@ -12,7 +13,7 @@ interface Props {
 
 const PRIORITY_KEYS = ['FixedWiFi', 'MobileWiFi', 'AirConditioner', 'WashingMachine', 'Refrigerator', 'Microwave', 'RiceCooker', 'Dryer', 'AutomaticLock', 'Bidet', 'HotWaterSupply']
 
-function amenityChips(listing: Listing): string[] {
+function amenityChips(listing: UniversalListing): string[] {
   const keys = new Set(listing.keywords.map((k) => k.key))
   const byKey = new Map(listing.keywords.map((k) => [k.key, k]))
   const out: string[] = []
@@ -33,9 +34,10 @@ function amenityChips(listing: Listing): string[] {
   return out
 }
 
-function stationLabel(station: Listing['nearestStations'][number] | undefined): string {
+function stationLabel(station: UniversalListing['nearestStations'][number] | undefined): string {
   if (!station) return 'Station info unavailable'
-  const name = /station$/i.test(station.stationName) ? station.stationName : `${station.stationName} Station`
+  const isStn = /station$/i.test(station.stationName) || /駅$/.test(station.stationName)
+  const name = isStn ? station.stationName : `${station.stationName} Station`
   return `${name} ${station.minuteWalk} min walk`
 }
 
@@ -44,10 +46,11 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
   const isInstant = listing.reservationApprovalRequiredSetting === 'ImmediateReservationRequest'
   const isSale = listing.listingSale?.listingSaleType !== 'notSale'
   const amount = monthlyAmount({ listing, quote })
-  const age = new Date().getFullYear() - listing.builtAt.buildYear
+  const buildYear = listing.builtAt?.buildYear ?? 0
+  const age = buildYear > 0 ? new Date().getFullYear() - buildYear : null
   const station = listing.nearestStations[0]
   const chips = amenityChips(listing)
-  const url = `https://www.sumyca.com/en/listings/${listing.id}`
+  const url = listing.sourceUrl
 
   return (
     <div
@@ -81,16 +84,24 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
 
       <div className="listing-body">
         <div className="listing-meta-row">
-          <span>
-            {listing.layoutType} ・ {listing.size} m²
+          <span className="badge badge-source" style={{ background: listing.sourceColor }}>
+            {listing.sourceName}
           </span>
-          <span>・</span>
           <span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{ verticalAlign: '-2px' }}>
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>{' '}
-            {listing.maxNumberOfGuests}
+            {listing.layoutType}
+            {listing.size > 0 && <> ・ {listing.size} m²</>}
           </span>
+          {listing.maxNumberOfGuests > 0 && (
+            <>
+              <span>・</span>
+              <span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{ verticalAlign: '-2px' }}>
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>{' '}
+                {listing.maxNumberOfGuests}
+              </span>
+            </>
+          )}
         </div>
 
         <div className="listing-price-row">
@@ -101,8 +112,12 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
         <div className="listing-name">{listing.name}</div>
 
         <div className="listing-sub">
-          <span className="star">☆</span> Age of building {age} years /{' '}
-          {stationLabel(station)} /{' '}
+          {age !== null && (
+            <>
+              <span className="star">☆</span> Age of building {age} years /{' '}
+            </>
+          )}
+          {station && <>{stationLabel(station)} / </>}
           {listing.address.prefecture.prefectureName} {listing.address.city.cityName}
         </div>
 
@@ -116,7 +131,7 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
 
         <div className="listing-footer">
           <a className="view-details" href={url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-            View details
+            View on {listing.sourceName}
           </a>
           {quote && quote.discountAmount > 0 && <span className="badge badge-best-rate">Best Rate</span>}
           {isInstant && <span className="badge badge-instant">Instant Book</span>}

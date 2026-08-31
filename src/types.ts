@@ -1,3 +1,5 @@
+import type { SourceId } from './sources/types'
+
 export interface Keyword {
   id: number
   category: string
@@ -112,4 +114,6 @@ export interface SearchFormState {
   radius: number
   instantBooking: boolean
   sort: 'costAsc' | 'costDesc'
+  /** boş dizi = tüm kaynaklar */
+  sources: SourceId[]
 }

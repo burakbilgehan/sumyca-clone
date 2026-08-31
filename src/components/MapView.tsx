@@ -4,11 +4,13 @@ import L from 'leaflet'
 import 'leaflet.markercluster'
 import { haversineKm } from '../api'
 import { compactYen, fmtYen, monthlyAmount, monthlySuffix } from '../price'
+import { SOURCES } from '../sources'
+import type { UniversalListing } from '../sources'
 import { TransitLayer } from './TransitLayer'
-import type { Listing, QuoteResult } from '../types'
+import type { QuoteResult } from '../types'
 
 export interface MapEntry {
-  listing: Listing
+  listing: UniversalListing
   quote?: QuoteResult
 }
 
@@ -37,8 +39,8 @@ function popupHtml(e: MapEntry): string {
     <div class="map-popup">
       <img src="${listing.mainImageThumbnailUrl || listing.mainImageUrl}" alt="" />
       <div class="name">${listing.name.replace(/"/g, '&quot;')}</div>
-      <div class="price">${fmtYen(monthlyAmount(e))} <small>${monthlySuffix()} ・ ${listing.layoutType} ・ ${listing.size} m²</small></div>
-      <a href="https://www.sumyca.com/en/listings/${listing.id}" target="_blank" rel="noreferrer">View on Sumyca</a>
+      <div class="price">${fmtYen(monthlyAmount(e))} <small>${monthlySuffix()} ・ ${listing.layoutType}${listing.size > 0 ? ` ・ ${listing.size} m²` : ''}</small></div>
+      <a href="${listing.sourceUrl}" target="_blank" rel="noreferrer">View on ${listing.sourceName}</a>
     </div>`
 }
 
@@ -139,8 +141,8 @@ function SearchAreaButton({ onSearchArea, searchingArea }: { onSearchArea: Props
   )
 }
 
-function priceIconHtml(amount: number): string {
-  return `<div class="price-marker">${compactYen(amount)}</div>`
+function priceIconHtml(amount: number, color: string): string {
+  return `<div class="price-marker" style="background:${color}">${compactYen(amount)}</div>`
 }
 
 function MarkersLayer({
@@ -162,7 +164,7 @@ function MarkersLayer({
     () =>
       L.divIcon({
         className: 'price-marker-wrap',
-        html: priceIconHtml(0),
+        html: priceIconHtml(0, '#999'),
         iconSize: [110, 26],
         iconAnchor: [55, 34],
       }),
@@ -188,7 +190,7 @@ function MarkersLayer({
       }
       const icon = L.divIcon({
         className: 'price-marker-wrap',
-        html: priceIconHtml(monthlyAmount(e)),
+        html: priceIconHtml(monthlyAmount(e), e.listing.sourceColor),
         iconSize: [110, 26],
         iconAnchor: [55, 34],
       })
@@ -233,7 +235,17 @@ export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHo
         <FocusHandler focus={focus} registryRef={registryRef} clusterRef={clusterRef} />
         <SearchAreaButton onSearchArea={onSearchArea} searchingArea={searchingArea} />
       </MapContainer>
-      <div className="map-legend">Monthly total (incl. utilities) · Map © OpenStreetMap</div>
+      <div className="map-legend">
+        <span className="legend-sources">
+          {SOURCES.filter((s) => entries.some((e) => e.listing.source === s.id)).map((s) => (
+            <span key={s.id} className="legend-source">
+              <span className="legend-dot" style={{ background: s.color }} />
+              {s.name}
+            </span>
+          ))}
+        </span>
+        <span>Map © OpenStreetMap</span>
+      </div>
     </div>
   )
 }

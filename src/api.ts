@@ -159,3 +159,20 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(a))
 }
+
+const geocodeCache = new Map<string, { lat: number; lng: number } | null>()
+
+export async function geocodePlace(q: string): Promise<{ lat: number; lng: number } | null> {
+  const key = q.trim().toLowerCase()
+  if (geocodeCache.has(key)) return geocodeCache.get(key) ?? null
+  const qs = new URLSearchParams({ q, limit: '1' })
+  const res = await fetch(`${PHOTON_BASE}?${qs.toString()}`)
+  let out: { lat: number; lng: number } | null = null
+  if (res.ok) {
+    const json = (await res.json()) as { features?: Array<{ geometry: { coordinates: [number, number] } }> }
+    const f = json.features?.[0]
+    if (f) out = { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }
+  }
+  geocodeCache.set(key, out)
+  return out
+}

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PlaceSuggestion, SearchFormState } from '../types'
 import { autocompletePlace } from '../api'
+import { ALL_SOURCE_IDS, SOURCES } from '../sources'
+import type { SourceId } from '../sources'
 
 interface Props {
   form: SearchFormState
@@ -86,6 +88,12 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
   }
 
   const num = (v: string | number) => (v === '' || v === 0 ? '' : String(v))
+
+  const activeSources = form.sources.length ? form.sources : ALL_SOURCE_IDS
+  const toggleSource = (id: SourceId) => {
+    const next = activeSources.includes(id) ? activeSources.filter((s) => s !== id) : [...activeSources, id]
+    onChange({ sources: next.length === ALL_SOURCE_IDS.length ? [] : next })
+  }
 
   return (
     <div className="search-form-wrap">
@@ -251,6 +259,27 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
             />
             Instant Book
           </label>
+          <div className="sources-field">
+            <label>Sources</label>
+            <div className="source-chips">
+              {SOURCES.map((s) => {
+                const on = activeSources.includes(s.id)
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`source-chip${on ? '' : ' off'}`}
+                    onClick={() => toggleSource(s.id)}
+                    aria-pressed={on}
+                  >
+                    <span className="dot" style={{ background: s.color }} />
+                    {s.name}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="sources-hint">If no source is selected, all sources are searched.</div>
+          </div>
         </div>
       )}
     </div>

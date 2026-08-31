@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ListingsWithRoomType, QuoteResult, SearchFormState } from './types'
-import { fetchQuotes, reverseGeocode, searchListings } from './api'
+import type { QuoteResult, SearchFormState } from './types'
+import { fetchQuotes, reverseGeocode } from './api'
 import { addDays, todayStr } from './price'
+import { ALL_SOURCE_IDS, SOURCES, finalizeListings, searchAllSources } from './sources'
+import type { SourceId, UniversalListing } from './sources'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { SearchForm } from './components/SearchForm'
 import { ListingCard } from './components/ListingCard'
 import { MapView, type FocusTarget, type MapEntry } from './components/MapView'
 
-const ITEMS_PER_PAGE = 50
 const AUTO_CAP = 500
 
 function defaultForm(): SearchFormState {
@@ -26,6 +27,7 @@ function defaultForm(): SearchFormState {
     radius: 20,
     instantBooking: false,
     sort: 'costAsc',
+    sources: [],
   }
 }
 
@@ -36,6 +38,7 @@ function readInitialForm(): SearchFormState {
     const v = qs.get(k)
     return v ? Number(v) || 0 : 0
   }
+  const sourcesParam = (qs.get('sources') ?? '').split(',').filter((s) => (ALL_SOURCE_IDS as string[]).includes(s))
   return {
     ...base,
     locationName: qs.get('query') ?? base.locationName,
@@ -46,6 +49,7 @@ function readInitialForm(): SearchFormState {
     maxMinuteWalk: num('maxMinuteWalk'),
     buildYearAfter: num('buildYearAfter'),
     sort: qs.get('sort') === 'costDesc' ? 'costDesc' : 'costAsc',
+    sources: sourcesParam as SourceId[],
   }
 }
 
@@ -59,6 +63,7 @@ function syncUrl(form: SearchFormState) {
   if (form.maxMinuteWalk) qs.set('maxMinuteWalk', String(form.maxMinuteWalk))
   if (form.buildYearAfter) qs.set('buildYearAfter', String(form.buildYearAfter))
   qs.set('sort', form.sort)
+  if (form.sources.length) qs.set('sources', form.sources.join(','))
   window.history.replaceState(null, '', `${window.location.pathname}?${qs.toString()}`)
 }
 
@@ -74,17 +79,19 @@ async function fetchQuotesFor(form: SearchFormState, ids: string[]): Promise<Rec
   return fetchQuotes(ids, startDate, endDate, form.numGuests)
 }
 
+type SourceState = { page: number; hasMore: boolean }
+
 export default function App() {
   const [form, setForm] = useState<SearchFormState>(readInitialForm)
-  const [results, setResults] = useState<ListingsWithRoomType[]>([])
+  const [results, setResults] = useState<UniversalListing[]>([])
   const [quotes, setQuotes] = useState<Record<string, QuoteResult>>({})
-  const [page, setPage] = useState(0)
   const [searched, setSearched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [draining, setDraining] = useState(false)
   const [searchingArea, setSearchingArea] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
+  const [notes, setNotes] = useState<string[]>([])
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focus, setFocus] = useState<FocusTarget | null>(null)
@@ -95,19 +102,15 @@ export default function App() {
   const searchSeq = useRef(0)
   const focusN = useRef(0)
   const formRef = useRef(form)
-  const pageRef = useRef(page)
   const resultsRef = useRef(results)
   const drainRef = useRef(false)
   const capRef = useRef(AUTO_CAP)
+  const sourcesRef = useRef<Record<string, SourceState>>({})
   const layoutRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     formRef.current = form
   }, [form])
-
-  useEffect(() => {
-    pageRef.current = page
-  }, [page])
 
   useEffect(() => {
     resultsRef.current = results
@@ -124,50 +127,66 @@ export default function App() {
     setForm((f) => ({ ...f, ...p }))
   }, [])
 
-  // tüm sonuçları arka planda çek (drain)
-  const drain = useCallback(async (f: SearchFormState, seq: number) => {
-    if (drainRef.current) return
-    drainRef.current = true
-    setDraining(true)
-    try {
-      let p = pageRef.current + 1
-      while (true) {
-        if (seq !== searchSeq.current) return
-        const res = await searchListings(f, p, ITEMS_PER_PAGE)
-        if (seq !== searchSeq.current) return
-        const more = res.listingsWithRoomType ?? []
-        if (more.length === 0) {
-          setHasMore(false)
-          break
-        }
-        const room = Math.max(0, capRef.current - resultsRef.current.length)
-        if (room <= 0) {
-          setHasMore(true)
-          break
-        }
-        const take = more.slice(0, room)
-        resultsRef.current = [...resultsRef.current, ...take]
-        setResults(resultsRef.current)
-        pageRef.current = p
-        setPage(p)
-        if (take.length > 0) {
-          const q = await fetchQuotesFor(f, take.map((w) => w.listing.id))
-          if (seq !== searchSeq.current) return
-          setQuotes((prev) => ({ ...prev, ...q }))
-        }
-        if (take.length < more.length) {
-          setHasMore(true)
-          break
-        }
-        p += 1
-      }
-    } catch (e) {
-      if (seq === searchSeq.current) setError(e instanceof Error ? e.message : 'Search failed')
-    } finally {
-      if (seq === searchSeq.current) setDraining(false)
-      drainRef.current = false
-    }
+  const appendFinalized = useCallback((incoming: UniversalListing[], form: SearchFormState) => {
+    const merged = finalizeListings([...resultsRef.current, ...incoming], form)
+    resultsRef.current = merged
+    setResults(merged)
   }, [])
+
+  // tüm sonuçları arka planda çek (drain)
+  const drain = useCallback(
+    async (f: SearchFormState, seq: number) => {
+      if (drainRef.current) return
+      drainRef.current = true
+      setDraining(true)
+      try {
+        while (true) {
+          if (seq !== searchSeq.current) return
+          const st = sourcesRef.current
+          const active = Object.keys(st).filter((id) => st[id].hasMore)
+          if (active.length === 0) {
+            setHasMore(false)
+            break
+          }
+          if (resultsRef.current.length >= capRef.current) {
+            setHasMore(true)
+            break
+          }
+          for (const id of active) {
+            if (seq !== searchSeq.current) return
+            const src = SOURCES.find((s) => s.id === id)
+            if (!src) continue
+            const nextPage = st[id].page + 1
+            let res
+            try {
+              res = await src.search(f, nextPage)
+            } catch {
+              res = { listings: [], total: -1, hasMore: false }
+            }
+            if (seq !== searchSeq.current) return
+            st[id] = { page: nextPage, hasMore: res.hasMore }
+            if (res.listings.length > 0) {
+              appendFinalized(res.listings, f)
+              const sumycaIds = res.listings.filter((l) => l.source === 'sumyca').map((l) => l.id)
+              if (sumycaIds.length > 0) {
+                const q = await fetchQuotesFor(f, sumycaIds)
+                if (seq !== searchSeq.current) return
+                setQuotes((prev) => ({ ...prev, ...q }))
+              }
+            }
+            if (resultsRef.current.length >= capRef.current) {
+              setHasMore(true)
+              return
+            }
+          }
+        }
+      } finally {
+        if (seq === searchSeq.current) setDraining(false)
+        drainRef.current = false
+      }
+    },
+    [appendFinalized],
+  )
 
   const runSearch = useCallback(
     async (_reset = true, extraForm?: SearchFormState) => {
@@ -177,22 +196,22 @@ export default function App() {
       setLoading(true)
       setError(null)
       try {
-        const res = await searchListings(f, 0, ITEMS_PER_PAGE)
+        const run = await searchAllSources(f, 0)
         if (seq !== searchSeq.current) return
-        const list = res.listingsWithRoomType ?? []
-        setResults(list)
-        resultsRef.current = list
-        setHasMore(list.length >= ITEMS_PER_PAGE)
-        setPage(0)
-        pageRef.current = 0
+        resultsRef.current = run.listings
+        setResults(run.listings)
+        sourcesRef.current = run.next
+        setNotes(run.notes)
+        setHasMore(run.hasMore)
         setQuotes({})
         setFitKey((k) => k + 1)
         setSearched(true)
         setHoveredId(null)
         setSelectedId(null)
         setFocus(null)
-        if (list.length > 0) {
-          const q = await fetchQuotesFor(f, list.map((w) => w.listing.id))
+        const sumycaIds = run.listings.filter((l) => l.source === 'sumyca').map((l) => l.id)
+        if (sumycaIds.length > 0) {
+          const q = await fetchQuotesFor(f, sumycaIds)
           if (seq === searchSeq.current) setQuotes(q)
         }
         void drain(f, seq)
@@ -247,27 +266,7 @@ export default function App() {
     didInitial.current = true
     const qs = new URLSearchParams(window.location.search)
     if (!qs.get('query')) return
-    const seq = ++searchSeq.current
-    void (async () => {
-      try {
-        const res = await searchListings(form, 0, ITEMS_PER_PAGE)
-        const list = res.listingsWithRoomType ?? []
-        setResults(list)
-        resultsRef.current = list
-        setHasMore(list.length >= ITEMS_PER_PAGE)
-        setPage(0)
-        pageRef.current = 0
-        setFitKey((k) => k + 1)
-        setSearched(true)
-        if (list.length > 0) {
-          const q = await fetchQuotesFor(form, list.map((w) => w.listing.id))
-          setQuotes(q)
-        }
-        void drain(form, seq)
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Search failed')
-      }
-    })()
+    void runSearch(true, formRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -307,9 +306,9 @@ export default function App() {
 
   const entries: MapEntry[] = useMemo(
     () =>
-      results.map((w) => ({
-        listing: w.listing,
-        quote: quotes[w.listing.id],
+      results.map((l) => ({
+        listing: l,
+        quote: quotes[l.id],
       })),
     [results, quotes],
   )
@@ -340,15 +339,22 @@ export default function App() {
               <span>{form.locationName}</span>
             </div>
           )}
+          {!loading && searched && !error && notes.length > 0 && (
+            <div className="results-notes">
+              {notes.map((n, i) => (
+                <div key={i}>・ {n}</div>
+              ))}
+            </div>
+          )}
           {!loading && searched && !error && results.length === 0 && (
             <div className="status-box">Try relaxing the filters (max rent, walk minutes, build year).</div>
           )}
-          {results.map((w) => (
-            <div key={w.listing.id} id={`card-${w.listing.id}`}>
+          {results.map((l) => (
+            <div key={l.id} id={`card-${l.id}`}>
               <ListingCard
-                listing={w.listing}
-                quote={quotes[w.listing.id]}
-                highlighted={hoveredId === w.listing.id || selectedId === w.listing.id}
+                listing={l}
+                quote={quotes[l.id]}
+                highlighted={hoveredId === l.id || selectedId === l.id}
                 onHover={setHoveredId}
                 onSelect={onSelectListing}
               />

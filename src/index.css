@@ -290,6 +290,64 @@ select {
   margin: 0;
 }
 
+.sources-field {
+  flex: 1 1 100%;
+  margin-top: 10px;
+}
+
+.sources-field > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.source-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  background: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.source-chip .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.source-chip.off {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.source-chip:hover {
+  border-color: var(--teal);
+}
+
+.sources-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
 /* ---------- results layout ---------- */
 .results-layout {
   flex: 1;
@@ -371,6 +429,13 @@ body.dragging-panel iframe {
   letter-spacing: 0.8px;
 }
 
+.results-notes {
+  padding: 0 4px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 /* ---------- listing card ---------- */
 .listing-card {
   position: relative;
@@ -437,6 +502,12 @@ body.dragging-panel iframe {
 .badge-sale {
   background: var(--sale);
   color: #fff;
+}
+
+.badge-source {
+  background: #14b8a6;
+  color: #fff;
+  letter-spacing: 0.4px;
 }
 
 .fav-btn {
@@ -685,7 +756,7 @@ body.dragging-panel iframe {
 .price-marker.hovered,
 .price-marker:hover {
   transform: scale(1.15);
-  background: #e31c5f;
+  filter: brightness(1.12);
   z-index: 1000 !important;
 }
 
@@ -895,6 +966,32 @@ body.dragging-panel iframe {
   color: var(--text-secondary);
   box-shadow: var(--shadow-card);
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.legend-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.legend-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
 /* mobile view toggle */
