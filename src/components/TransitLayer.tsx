@@ -63,7 +63,7 @@ export function TransitLayer() {
       if (!stationLayer) return
       const z = map.getZoom()
       // uzakta istasyon yok; biraz yaklaşınca açılır
-      if (z < 13) {
+      if (z < 14) {
         stationLayer.clearLayers()
         lastKeysRef.current = new Set()
         return
@@ -94,8 +94,8 @@ export function TransitLayer() {
 
     const setTiers = () => {
       const z = map.getZoom()
-      map.getContainer().classList.toggle('zoomed-in', z >= 15)
-      map.getContainer().classList.toggle('transit-far', z < 13)
+      map.getContainer().classList.toggle('zoomed-in', z >= 14)
+      map.getContainer().classList.toggle('transit-far', z < 14)
     }
 
     const onMove = () => {
