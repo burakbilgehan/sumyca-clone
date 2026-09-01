@@ -293,7 +293,7 @@ export default function App() {
       const r = el.getBoundingClientRect()
       if (r.width === 0) return
       const pct = ((ev.clientX - r.left) / r.width) * 100
-      setListPct(Math.min(70, Math.max(22, pct)))
+      setListPct(Math.min(70, Math.max(26, pct)))
     }
     const up = () => {
       document.body.classList.remove('dragging-panel')
