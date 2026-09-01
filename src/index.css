@@ -447,7 +447,6 @@ body.dragging-panel iframe {
   overflow: hidden;
   background: #fff;
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
-  container-type: inline-size;
 }
 
 .listing-card:hover,
@@ -461,59 +460,59 @@ body.dragging-panel iframe {
   box-shadow: 0 0 0 2px var(--teal-soft), 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
-/* panel daraldıkça kart küçülür ve daha az yer kaplar: fotoğraf küçülür, sonra kompakt satıra döner ki panele daha çok ev sığsın */
-@container (max-width: 640px) {
-  .listing-photo {
-    flex: 0 0 180px;
-    min-height: 0;
-  }
-  .listing-body {
-    padding: 12px 14px 12px 0;
-  }
+/* panel daraldıkça kart yoğunluğu artar: önce fotoğraf küçülür, sonra kompakt satıra döner ki panele daha çok ev sığsın */
+.density-sm .listing-photo {
+  flex: 0 0 180px;
+  min-height: 0;
+}
+.density-sm .listing-body {
+  padding: 12px 14px 12px 0;
+}
+.density-sm .listing-name,
+.density-sm .listing-sub {
+  -webkit-line-clamp: 1;
 }
 
-@container (max-width: 480px) {
-  .listing-photo {
-    flex: 0 0 110px;
-    min-height: 0;
-  }
-  .listing-body {
-    padding: 8px 12px 8px 0;
-  }
-  .photo-badges,
-  .listing-meta-row .meta-guests,
-  .listing-meta-row span:not(.badge-source),
-  .listing-price-note,
-  .listing-card .transit-box,
-  .listing-chips,
-  .listing-sub,
-  .listing-footer .badge {
-    display: none;
-  }
-  .listing-meta-row {
-    margin-bottom: 2px;
-    font-size: 12px;
-  }
-  .listing-price {
-    font-size: 16px;
-    margin-bottom: 2px;
-  }
-  .listing-price-suffix {
-    font-size: 11px;
-  }
-  .listing-name {
-    -webkit-line-clamp: 1;
-    font-size: 12px;
-    line-height: 16px;
-    margin-bottom: 2px;
-  }
-  .listing-footer {
-    margin-top: 0;
-  }
-  .view-details {
-    font-size: 12px;
-    padding: 0;
-  }
+.density-xs .listing-photo {
+  flex: 0 0 110px;
+  min-height: 0;
+}
+.density-xs .listing-body {
+  padding: 8px 12px 8px 0;
+}
+.density-xs .photo-badges,
+.density-xs .listing-meta-row .meta-guests,
+.density-xs .listing-meta-row span:not(.badge-source),
+.density-xs .listing-price-note,
+.density-xs .transit-box,
+.density-xs .listing-chips,
+.density-xs .listing-sub,
+.density-xs .listing-footer .badge {
+  display: none;
+}
+.density-xs .listing-meta-row {
+  margin-bottom: 2px;
+  font-size: 12px;
+}
+.density-xs .listing-price {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.density-xs .listing-price-suffix {
+  font-size: 11px;
+}
+.density-xs .listing-name {
+  -webkit-line-clamp: 1;
+  font-size: 12px;
+  line-height: 16px;
+  margin-bottom: 2px;
+}
+.density-xs .listing-footer {
+  margin-top: 0;
+}
+.density-xs .view-details {
+  font-size: 12px;
+  padding: 0;
 }
 
 .listing-photo {

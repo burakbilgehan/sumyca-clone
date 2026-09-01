@@ -97,6 +97,7 @@ export default function App() {
   const [focus, setFocus] = useState<FocusTarget | null>(null)
   const [fitKey, setFitKey] = useState(0)
   const [listPct, setListPct] = useState(42)
+  const [cardDensity, setCardDensity] = useState<'full' | 'sm' | 'xs'>('full')
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches)
   const searchSeq = useRef(0)
@@ -107,6 +108,7 @@ export default function App() {
   const capRef = useRef(AUTO_CAP)
   const sourcesRef = useRef<Record<string, SourceState>>({})
   const layoutRef = useRef<HTMLDivElement>(null)
+  const listPanelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     formRef.current = form
@@ -121,6 +123,22 @@ export default function App() {
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  // sol panel genişliğini izle: daraldıkça kart yoğunluğunu artır (daha çok ev sığsın)
+  useEffect(() => {
+    const el = listPanelRef.current
+    if (!el) return
+    const update = () => {
+      const w = el.clientWidth
+      if (w <= 560) setCardDensity('xs')
+      else if (w <= 720) setCardDensity('sm')
+      else setCardDensity('full')
+    }
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    update()
+    return () => ro.disconnect()
   }, [])
 
   const patch = useCallback((p: Partial<SearchFormState>) => {
@@ -320,7 +338,8 @@ export default function App() {
 
       <div className="results-layout" ref={layoutRef}>
         <div
-          className={`list-panel${isMobile && mobileView === 'map' ? ' hidden-on-mobile' : ''}`}
+          ref={listPanelRef}
+          className={`list-panel density-${cardDensity}${isMobile && mobileView === 'map' ? ' hidden-on-mobile' : ''}`}
           style={!isMobile ? { flex: `0 0 ${listPct}%`, maxWidth: 'none' } : undefined}
         >
           {loading && (
