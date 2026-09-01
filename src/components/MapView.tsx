@@ -224,8 +224,10 @@ export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHo
     <div className="map-root">
       <MapContainer center={center} zoom={13} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }}>
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          detectRetina={true}
           maxZoom={19}
         />
         <MapSetup clusterRef={clusterRef} />

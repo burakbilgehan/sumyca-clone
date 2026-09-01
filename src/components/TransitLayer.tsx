@@ -5,20 +5,31 @@ import type { LineDef, StationDef } from '../data/tokyo'
 
 let tokyoData: { TOKYO_LINES: LineDef[]; TOKYO_STATIONS: StationDef[] } | null = null
 
+// Doygun hat renklerini pastelleştir: beyazla karıştır → göz yormaz
+function soften(hex: string, amt: number): string {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex
+  const n = parseInt(hex.slice(1), 16)
+  const r = (n >> 16) & 255
+  const g = (n >> 8) & 255
+  const b = n & 255
+  const m = (c: number) => Math.round(c + (255 - c) * amt)
+  return `rgb(${m(r)},${m(g)},${m(b)})`
+}
+
 function stationIcon(s: StationDef, lines: LineDef[]): L.DivIcon {
   const covered = s.lines.map((li) => lines[li]).filter((l) => l)
   const dots = covered
     .slice(0, 4)
-    .map((l) => `<i style="background:${l.color}"></i>`)
+    .map((l) => `<i style="background:${soften(l.color, 0.4)}"></i>`)
     .join('')
   const label = s.en
-    ? `<div class="station-label">${s.en.replace(/</g, '&lt;')}<span class="ja">${s.ja.replace(/</g, '&lt;')}</span></div>`
+    ? `<div class="station-label">${s.en.replace(/</g, '&lt;')}</div>`
     : `<div class="station-label">${s.ja.replace(/</g, '&lt;')}</div>`
   return L.divIcon({
     className: 'station-wrap',
     html: `<div class="station-marker"><span class="station-dots">${dots}</span>${label}</div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
   })
 }
 
@@ -106,11 +117,11 @@ export function TransitLayer() {
       stationLayer = L.layerGroup().addTo(map)
       for (const line of mod.TOKYO_LINES) {
         if (line.path.length < 2) continue
-        L.polyline(line.path, { color: '#333', weight: 3, opacity: 0.7, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
+        L.polyline(line.path, { color: '#8a8a8a', weight: 2, opacity: 0.35, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
       }
       for (const line of mod.TOKYO_LINES) {
         if (line.path.length < 2) continue
-        L.polyline(line.path, { color: line.color, weight: 1.8, opacity: 0.92, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
+        L.polyline(line.path, { color: soften(line.color, 0.45), weight: 1.2, opacity: 0.6, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
       }
       map.on('moveend', onMove)
       map.on('zoomed', onZoom)
