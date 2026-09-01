@@ -461,48 +461,58 @@ body.dragging-panel iframe {
   box-shadow: 0 0 0 2px var(--teal-soft), 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 
-/* panel daraldıkça kart kompakt bir satır olur: fotoğraf küçülür, az önemli bilgi atılır */
-@container (max-width: 490px) {
+/* panel daraldıkça kart küçülür ve daha az yer kaplar: fotoğraf küçülür, sonra kompakt satıra döner ki panele daha çok ev sığsın */
+@container (max-width: 640px) {
   .listing-photo {
-    flex: 0 0 140px;
+    flex: 0 0 180px;
     min-height: 0;
+  }
+  .listing-body {
+    padding: 12px 14px 12px 0;
   }
 }
 
-@container (max-width: 430px) {
+@container (max-width: 480px) {
   .listing-photo {
-    flex: 0 0 96px;
+    flex: 0 0 110px;
+    min-height: 0;
+  }
+  .listing-body {
+    padding: 8px 12px 8px 0;
   }
   .photo-badges,
   .listing-meta-row .meta-guests,
+  .listing-meta-row span:not(.badge-source),
   .listing-price-note,
   .listing-card .transit-box,
   .listing-chips,
+  .listing-sub,
   .listing-footer .badge {
     display: none;
   }
   .listing-meta-row {
     margin-bottom: 2px;
+    font-size: 12px;
   }
   .listing-price {
-    font-size: 18px;
-    margin-bottom: 3px;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  .listing-price-suffix {
+    font-size: 11px;
   }
   .listing-name {
     -webkit-line-clamp: 1;
     font-size: 12px;
-    margin-bottom: 3px;
+    line-height: 16px;
+    margin-bottom: 2px;
   }
-  .listing-sub {
-    -webkit-line-clamp: 1;
-    margin-bottom: 4px;
+  .listing-footer {
+    margin-top: 0;
   }
   .view-details {
     font-size: 12px;
-    padding: 2px 0;
-  }
-  .listing-body {
-    padding: 10px 12px 10px 0;
+    padding: 0;
   }
 }
 
