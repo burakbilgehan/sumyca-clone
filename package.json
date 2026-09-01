@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:tokyo": "node scripts/build-tokyo.mjs",
+    "build:transit": "node scripts/build-transit-matrix.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

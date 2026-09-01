@@ -47,4 +47,5 @@ Worker ayarlanmazsa Blueground/Exflats kaynakları "proxy not configured" notu i
 - Konum autocomplete: Photon (OSM)
 - Harita: Leaflet + OpenStreetMap tiles
 - Rezervasyonlar orijinal sitede yapılır: karttaki "View on {source}" linki kaynağın detay sayfasına gider.
+- Ulaşım kutusu: her kart, 8 merkeze (Shibuya, Shinjuku, Asakusa, Akihabara, Roppongi, Ginza, Haneda, Narita) tahmini toplu taşıma süresini gösterir. Süreler `scripts/build-transit-matrix.mjs` ile mini-tokyo-3d istasyon grafı üzerinde Dijkstra ile önceden hesaplanmış statik matristen gelir (hat hızları + aktarma cezaları + havalimanı ekspres kenarları); gerçek tarife değil tahmindir, kartta "(est.)" olarak işaretlenir. Listing'in istasyonları matriste bulunamazsa koordinattan en yakın istasyonlara snap yapılır. Matrisi yenilemek: `npm run build:transit`.
 - `scripts/smoke-search.mjs` ve `scripts/smoke-integration.mjs`: adapter'ları dev server üzerinden uçtan uca test eder.

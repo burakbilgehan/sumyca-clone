@@ -3,6 +3,7 @@ import type { QuoteResult } from '../types'
 import { fmtYen, monthlyAmount, monthlySuffix } from '../price'
 import { SOURCES } from '../sources'
 import type { UniversalListing } from '../sources'
+import { TransitBox } from './TransitBox'
 
 interface Props {
   listing: UniversalListing
@@ -123,6 +124,8 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
           {station && <>{stationLabel(station)} / </>}
           {listing.address.prefecture.prefectureName} {listing.address.city.cityName}
         </div>
+
+        <TransitBox listing={listing} />
 
         <div className="listing-chips">
           {chips.map((c) => (
