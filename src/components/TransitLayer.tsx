@@ -117,11 +117,11 @@ export function TransitLayer() {
       stationLayer = L.layerGroup().addTo(map)
       for (const line of mod.TOKYO_LINES) {
         if (line.path.length < 2) continue
-        L.polyline(line.path, { color: '#8a8a8a', weight: 2, opacity: 0.35, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
+        L.polyline(line.path, { color: '#6b6b6b', weight: 3.4, opacity: 0.45, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
       }
       for (const line of mod.TOKYO_LINES) {
         if (line.path.length < 2) continue
-        L.polyline(line.path, { color: soften(line.color, 0.45), weight: 1.2, opacity: 0.6, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
+        L.polyline(line.path, { color: soften(line.color, 0.18), weight: 2.6, opacity: 0.92, pane: 'transit', lineCap: 'round', lineJoin: 'round' }).addTo(lineLayer)
       }
       map.on('moveend', onMove)
       map.on('zoomed', onZoom)
