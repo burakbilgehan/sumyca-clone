@@ -447,6 +447,7 @@ body.dragging-panel iframe {
   overflow: hidden;
   background: #fff;
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  container-type: inline-size;
 }
 
 .listing-card:hover,
@@ -458,6 +459,39 @@ body.dragging-panel iframe {
 .listing-card.highlighted {
   border-color: var(--teal);
   box-shadow: 0 0 0 2px var(--teal-soft), 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* panel daraldıkça kart kompaktlaşır: fotoğraf küçülür, daralınca dikey istifle, az önemli bilgi atılır */
+@container (max-width: 640px) {
+  .listing-photo {
+    flex: 0 0 180px;
+  }
+}
+
+@container (max-width: 460px) {
+  .listing-card {
+    flex-direction: column;
+  }
+  .listing-photo {
+    flex: none;
+    width: 100%;
+    min-height: 0;
+    height: 190px;
+  }
+  .listing-body {
+    padding: 12px 16px;
+  }
+}
+
+@container (max-width: 380px) {
+  .listing-price {
+    font-size: 19px;
+  }
+  .listing-price-note,
+  .listing-meta-row .meta-guests,
+  .listing-chips .chip:nth-child(n + 3) {
+    display: none;
+  }
 }
 
 .listing-photo {
@@ -626,7 +660,7 @@ body.dragging-panel iframe {
 
 .transit-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
   gap: 5px;
 }
 
@@ -1005,16 +1039,31 @@ body.dragging-panel iframe {
 }
 
 .map-popup {
-  min-width: 210px;
+  min-width: 220px;
 }
 
 .map-popup img {
   width: 100%;
-  height: 120px;
+  height: 118px;
   object-fit: cover;
   border-radius: 6px;
   margin-bottom: 8px;
   display: block;
+}
+
+.map-popup .meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.map-popup .meta-row .badge-source {
+  font-size: 10px;
+  padding: 2px 8px;
 }
 
 .map-popup .name {
@@ -1037,6 +1086,25 @@ body.dragging-panel iframe {
   font-size: 12px;
   font-weight: 400;
   color: var(--text-secondary);
+}
+
+.map-popup .transit-box {
+  margin-bottom: 8px;
+}
+
+.map-popup .transit-grid {
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 4px;
+}
+
+.map-popup .transit-chip {
+  padding: 3px 2px;
+}
+
+.leaflet-container .leaflet-popup-close-button {
+  top: 6px !important;
+  right: 8px !important;
+  font-size: 18px !important;
 }
 
 .map-popup a {

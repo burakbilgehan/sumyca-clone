@@ -95,7 +95,7 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
             {listing.size > 0 && <> ・ {listing.size} m²</>}
           </span>
           {listing.maxNumberOfGuests > 0 && (
-            <>
+            <span className="meta-guests">
               <span>・</span>
               <span>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{ verticalAlign: '-2px' }}>
@@ -103,7 +103,7 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
                 </svg>{' '}
                 {listing.maxNumberOfGuests}
               </span>
-            </>
+            </span>
           )}
         </div>
 

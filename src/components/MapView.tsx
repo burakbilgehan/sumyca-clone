@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet.markercluster'
@@ -6,6 +6,7 @@ import { haversineKm } from '../api'
 import { compactYen, fmtYen, monthlyAmount, monthlySuffix } from '../price'
 import { SOURCES } from '../sources'
 import type { UniversalListing } from '../sources'
+import { transitTimesFor, type TransitTimes } from '../transit'
 import { TransitLayer } from './TransitLayer'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { LandmarkLayer } from './LandmarkLayer'
@@ -35,13 +36,37 @@ interface Props {
 type MarkerRegistry = Map<string, L.Marker>
 type ClusterGroup = L.MarkerClusterGroup
 
-function popupHtml(e: MapEntry): string {
+function transitGridHtml(times: TransitTimes | null): string {
+  if (!times) return ''
+  const chips = times.hubIds
+    .map((id, i) => {
+      const m = times.minutes[id]
+      if (m == null) return ''
+      return `<span class="transit-chip"><span class="transit-hub">${times.hubLabels[i] || id}</span><span class="transit-min">${m} min</span></span>`
+    })
+    .join('')
+  return `<div class="transit-box"><div class="transit-title">Transit to hubs <span class="transit-est">(est.)</span></div><div class="transit-grid">${chips}</div></div>`
+}
+
+function popupHtml(e: MapEntry, times: TransitTimes | null): string {
   const { listing } = e
+  const meta = [
+    listing.layoutType,
+    listing.size > 0 ? `${listing.size} m²` : '',
+    listing.maxNumberOfGuests > 0 ? `${listing.maxNumberOfGuests} guests` : '',
+  ]
+    .filter(Boolean)
+    .join('・')
   return `
     <div class="map-popup">
       <img src="${listing.mainImageThumbnailUrl || listing.mainImageUrl}" alt="" />
+      <div class="meta-row">
+        <span class="badge badge-source" style="background:${listing.sourceColor}">${listing.sourceName}</span>
+        ${meta ? `<span>${meta}</span>` : ''}
+      </div>
       <div class="name">${listing.name.replace(/"/g, '&quot;')}</div>
-      <div class="price">${fmtYen(monthlyAmount(e))} <small>${monthlySuffix()} ・ ${listing.layoutType}${listing.size > 0 ? ` ・ ${listing.size} m²` : ''}</small></div>
+      <div class="price">${fmtYen(monthlyAmount(e))} <small>${monthlySuffix()}</small></div>
+      ${transitGridHtml(times)}
       <a href="${listing.sourceUrl}" target="_blank" rel="noreferrer">View on ${listing.sourceName}</a>
     </div>`
 }
@@ -50,7 +75,7 @@ function MapSetup({ clusterRef }: { clusterRef: React.MutableRefObject<ClusterGr
   const map = useMap()
   useEffect(() => {
     const group = L.markerClusterGroup({
-      maxClusterRadius: 70,
+      maxClusterRadius: 55,
       showCoverageOnHover: false,
       disableClusteringAtZoom: 17,
       spiderfyOnMaxZoom: true,
@@ -154,6 +179,7 @@ function MarkersLayer({
   onSelect,
   registryRef,
   clusterRef,
+  timesMap,
 }: {
   entries: MapEntry[]
   hoveredId: string | null
@@ -161,6 +187,7 @@ function MarkersLayer({
   onSelect: (id: string) => void
   registryRef: React.MutableRefObject<MarkerRegistry>
   clusterRef: React.MutableRefObject<ClusterGroup | null>
+  timesMap: Record<string, TransitTimes | null>
 }) {
   const priceIcon = useMemo(
     () =>
@@ -197,7 +224,12 @@ function MarkersLayer({
         iconAnchor: [55, 34],
       })
       marker.setIcon(icon)
-      marker.bindPopup(popupHtml(e), { minWidth: 220, maxWidth: 260, closeButton: false })
+      marker.bindPopup(popupHtml(e, timesMap[e.listing.id]), {
+        minWidth: 230,
+        maxWidth: 280,
+        closeButton: true,
+        closeOnClick: false,
+      })
     }
 
     for (const [id, marker] of markers) {
@@ -206,7 +238,7 @@ function MarkersLayer({
         markers.delete(id)
       }
     }
-  }, [entries, priceIcon, onHover, onSelect, registryRef, clusterRef])
+  }, [entries, priceIcon, onHover, onSelect, registryRef, clusterRef, timesMap])
 
   useEffect(() => {
     for (const [id, marker] of registryRef.current) {
@@ -221,6 +253,31 @@ function MarkersLayer({
 export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHover, onSelect, onSearchArea }: Props) {
   const registryRef = useRef<MarkerRegistry>(new Map())
   const clusterRef = useRef<ClusterGroup | null>(null)
+  const [timesMap, setTimesMap] = useState<Record<string, TransitTimes | null>>({})
+
+  // baloncuk içindeki metro süreleri için her ilanın transit verisini yükle (kartlarla paylaşılan önbellek)
+  useEffect(() => {
+    let alive = true
+    const pending = entries.map((e) => transitTimesFor(e.listing).then((t) => [e.listing.id, t ?? null] as const))
+    Promise.all(pending).then((rs) => {
+      if (!alive) return
+      setTimesMap((prev) => {
+        let changed = false
+        const next = { ...prev }
+        for (const [id, t] of rs) {
+          if ((next[id] ?? null) !== t) {
+            next[id] = t
+            changed = true
+          }
+        }
+        return changed ? next : prev
+      })
+    })
+    return () => {
+      alive = false
+    }
+  }, [entries])
+
   const center: [number, number] = entries.length > 0 ? [entries[0].listing.location.lat, entries[0].listing.location.lng] : [35.6812, 139.7671]
   return (
     <div className="map-root">
@@ -235,7 +292,7 @@ export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHo
         <NeighborhoodLayer />
         <LandmarkLayer />
         <TransitLayer />
-        <MarkersLayer entries={entries} hoveredId={hoveredId} onHover={onHover} onSelect={onSelect} registryRef={registryRef} clusterRef={clusterRef} />
+        <MarkersLayer entries={entries} hoveredId={hoveredId} onHover={onHover} onSelect={onSelect} registryRef={registryRef} clusterRef={clusterRef} timesMap={timesMap} />
         <FocusHandler focus={focus} registryRef={registryRef} clusterRef={clusterRef} />
         <SearchAreaButton onSearchArea={onSearchArea} searchingArea={searchingArea} />
       </MapContainer>
