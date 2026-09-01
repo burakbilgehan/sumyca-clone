@@ -62,12 +62,13 @@ export function TransitLayer() {
     const renderStations = (lines: LineDef[]) => {
       if (!stationLayer) return
       const z = map.getZoom()
-      // uzakta istasyon yok; biraz yaklaşınca açılır
-      if (z < 14) {
+      // uzakta istasyon yok; z15'te sadece aktarma istasyonları, z16+ hepsi
+      if (z < 15) {
         stationLayer.clearLayers()
         lastKeysRef.current = new Set()
         return
       }
+      const junctionsOnly = z < 16
       const b = map.getBounds()
       const s = b.getSouth() - 0.02
       const w = b.getWest() - 0.02
@@ -75,6 +76,7 @@ export function TransitLayer() {
       const e = b.getEast() + 0.02
       const active: string[] = []
       for (const st of tokyoData!.TOKYO_STATIONS) {
+        if (junctionsOnly && st.lines.length < 2) continue
         if (st.lat < s || st.lat > n || st.lng < w || st.lng > e) continue
         const key = `${st.lng.toFixed(4)},${st.lat.toFixed(4)}`
         active.push(key)
@@ -94,8 +96,10 @@ export function TransitLayer() {
 
     const setTiers = () => {
       const z = map.getZoom()
-      map.getContainer().classList.toggle('zoomed-in', z >= 14)
-      map.getContainer().classList.toggle('transit-far', z < 14)
+      const el = map.getContainer().classList
+      el.toggle('zoomed-in', z >= 16)
+      el.toggle('stations-mid', z === 15)
+      el.toggle('transit-far', z < 15)
     }
 
     const onMove = () => {

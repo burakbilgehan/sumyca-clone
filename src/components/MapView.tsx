@@ -7,6 +7,7 @@ import { compactYen, fmtYen, monthlyAmount, monthlySuffix } from '../price'
 import { SOURCES } from '../sources'
 import type { UniversalListing } from '../sources'
 import { TransitLayer } from './TransitLayer'
+import { NeighborhoodLayer } from './NeighborhoodLayer'
 import type { QuoteResult } from '../types'
 
 export interface MapEntry {
@@ -230,6 +231,7 @@ export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHo
         />
         <MapSetup clusterRef={clusterRef} />
         <FitBounds entries={entries} fitKey={fitKey} />
+        <NeighborhoodLayer />
         <TransitLayer />
         <MarkersLayer entries={entries} hoveredId={hoveredId} onHover={onHover} onSelect={onSelect} registryRef={registryRef} clusterRef={clusterRef} />
         <FocusHandler focus={focus} registryRef={registryRef} clusterRef={clusterRef} />

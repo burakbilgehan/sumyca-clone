@@ -903,6 +903,12 @@ body.dragging-panel iframe {
   gap: 1px;
 }
 
+/* z15: sadece aktarma istasyonları, küçük ve etiketsiz */
+.stations-mid .station-marker {
+  transform: scale(0.7);
+  border-width: 1.5px;
+}
+
 .zoomed-in .station-label {
   display: block;
 }
@@ -916,6 +922,31 @@ body.dragging-panel iframe {
 .zoomed-in .station-dots i {
   width: 5.5px;
   height: 5.5px;
+}
+
+/* ---------- ingilizce mahalle etiketleri ---------- */
+.hood-label-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hood-label {
+  white-space: nowrap;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #33424a;
+  text-align: center;
+  line-height: 1.5;
+  text-shadow:
+    0 0 3px #fff,
+    0 0 3px #fff,
+    0 1px 2px #fff,
+    0 -1px 2px #fff,
+    1px 0 2px #fff,
+    -1px 0 2px #fff;
+  pointer-events: none;
+  user-select: none;
 }
 
 .station-popup {
