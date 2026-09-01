@@ -476,19 +476,20 @@ body.dragging-panel iframe {
     flex: none;
     width: 100%;
     min-height: 0;
-    height: 190px;
+    height: 180px;
   }
   .listing-body {
     padding: 12px 16px;
   }
 }
 
-@container (max-width: 380px) {
+@container (max-width: 420px) {
   .listing-price {
     font-size: 19px;
   }
   .listing-price-note,
   .listing-meta-row .meta-guests,
+  .listing-card .transit-box,
   .listing-chips .chip:nth-child(n + 3) {
     display: none;
   }

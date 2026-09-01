@@ -79,7 +79,8 @@ function MapSetup({ clusterRef }: { clusterRef: React.MutableRefObject<ClusterGr
       showCoverageOnHover: false,
       disableClusteringAtZoom: 17,
       spiderfyOnMaxZoom: true,
-      zoomToBoundsOnClick: true,
+      spiderfyOnEveryZoom: true,
+      zoomToBoundsOnClick: false,
       iconCreateFunction: (cluster) =>
         L.divIcon({
           className: 'cluster-wrap',
@@ -228,7 +229,7 @@ function MarkersLayer({
         minWidth: 230,
         maxWidth: 280,
         closeButton: true,
-        closeOnClick: false,
+        closeOnClick: true,
       })
     }
 
