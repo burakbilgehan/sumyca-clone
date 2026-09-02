@@ -17,9 +17,13 @@ export interface MapEntry {
   quote?: QuoteResult
 }
 
+export type FocusSource = 'list' | 'map'
+
 export interface FocusTarget {
   id: string
   n: number
+  /** list: bölge ölçeğine uç; map: kullanıcı zaten oradadır, haritayı oynatma */
+  source: FocusSource
 }
 
 interface Props {
@@ -29,7 +33,7 @@ interface Props {
   fitKey: number
   searchingArea: boolean
   onHover: (id: string | null) => void
-  onSelect: (id: string) => void
+  onSelect: (id: string, source: FocusSource) => void
   onSearchArea: (lat: number, lng: number, radiusKm: number) => void
 }
 
@@ -176,6 +180,12 @@ function FocusHandler({
       revealMarker(group, marker)
     }
 
+    // Haritadan tıklama: zoom ve konum olduğu gibi kalır, sadece popup açılır
+    if (focus.source === 'map') {
+      reveal()
+      return
+    }
+
     const target = marker.getLatLng()
     const zoom = FOCUS_ZOOM
     const alreadyThere = map.getZoom() === zoom && map.getCenter().distanceTo(target) < 5
@@ -231,7 +241,7 @@ function MarkersLayer({
   entries: MapEntry[]
   hoveredId: string | null
   onHover: (id: string | null) => void
-  onSelect: (id: string) => void
+  onSelect: (id: string, source: FocusSource) => void
   registryRef: React.MutableRefObject<MarkerRegistry>
   clusterRef: React.MutableRefObject<ClusterGroup | null>
   timesMap: Record<string, TransitTimes | null>
@@ -260,7 +270,7 @@ function MarkersLayer({
         marker = L.marker([e.listing.location.lat, e.listing.location.lng], { icon: priceIcon, riseOnHover: false })
         marker.on('mouseover', () => onHover(e.listing.id))
         marker.on('mouseout', () => onHover(null))
-        marker.on('click', () => onSelect(e.listing.id))
+        marker.on('click', () => onSelect(e.listing.id, 'map'))
         group.addLayer(marker)
         markers.set(e.listing.id, marker)
       }

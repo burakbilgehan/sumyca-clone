@@ -8,7 +8,7 @@ import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { SearchForm } from './components/SearchForm'
 import { ListingCard } from './components/ListingCard'
-import { MapView, type FocusTarget, type MapEntry } from './components/MapView'
+import { MapView, type FocusSource, type FocusTarget, type MapEntry } from './components/MapView'
 
 const AUTO_CAP = 500
 
@@ -288,10 +288,10 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const onSelectListing = useCallback((id: string) => {
+  const onSelectListing = useCallback((id: string, source: FocusSource = 'list') => {
     setSelectedId(id)
     focusN.current += 1
-    setFocus({ id, n: focusN.current })
+    setFocus({ id, n: focusN.current, source })
     const el = document.getElementById(`card-${id}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [])
