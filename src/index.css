@@ -33,7 +33,9 @@ body {
 #root {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 a {
@@ -130,8 +132,11 @@ select {
 
 /* ---------- search form ---------- */
 .search-form-wrap {
-  padding: 16px 72px 0;
+  padding: 12px 72px 8px;
   background: #fff;
+  position: relative;
+  z-index: 1100;
+  flex: 0 0 auto;
 }
 
 .search-form {
@@ -243,6 +248,13 @@ select {
   margin-left: auto;
 }
 
+.more-filters-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
 .more-filters-toggle {
   display: inline-flex;
   align-items: center;
@@ -252,21 +264,63 @@ select {
   color: var(--teal);
   font-size: 13px;
   font-weight: 700;
-  padding: 8px 4px 12px;
+  padding: 2px 4px;
 }
 
+.more-filters-toggle .count {
+  background: var(--teal);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 11px;
+  padding: 0 6px;
+  line-height: 16px;
+}
+
+/* açılır filtre paneli: sayfayı itmez, sonuçların üstünde yüzer */
 .more-filters {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  top: calc(100% - 4px);
+  z-index: 1200;
   display: flex;
   flex-wrap: wrap;
-  padding: 4px 0 12px;
+  gap: 8px;
+  padding: 12px 12px 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
 }
 
 .more-filters .form-field {
   flex: 1 1 140px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  margin-right: 8px;
-  margin-top: 8px;
+}
+
+.more-filters-actions {
+  flex: 1 1 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.more-filters-actions button {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.more-filters-actions button.primary {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
 }
 
 .instant-book-chip {
@@ -361,11 +415,10 @@ select {
   flex: 1 1 46%;
   min-width: 320px;
   max-width: 58%;
+  min-height: 0;
   padding: 8px 16px 40px 72px;
   overflow-y: auto;
-  max-height: calc(100vh - 72px);
-  position: sticky;
-  top: 72px;
+  overscroll-behavior: contain;
 }
 
 .panel-divider {
@@ -374,9 +427,6 @@ select {
   background: #f2f2f2;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
-  position: sticky;
-  top: 72px;
-  height: calc(100vh - 72px);
   z-index: 2;
   display: flex;
   align-items: center;
@@ -408,10 +458,7 @@ body.dragging-panel iframe {
 .map-panel {
   flex: 1 1 0%;
   min-width: 0;
-  position: sticky;
-  top: 72px;
-  height: calc(100vh - 72px);
-  min-height: 480px;
+  min-height: 0;
 }
 
 .results-meta {
@@ -1228,31 +1275,37 @@ body.dragging-panel iframe {
 
 /* ---------- footer ---------- */
 .site-footer {
+  flex: 0 0 auto;
   border-top: 1px solid var(--border);
-  padding: 32px 72px;
+  padding: 6px 72px;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   background: #fff;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .site-footer .brand {
-  font-size: 20px;
   font-weight: 700;
+  color: var(--text);
+  margin-right: 8px;
 }
 
 .site-footer p {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--text-secondary);
+  margin: 0;
+  display: inline;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .site-footer .links {
   display: flex;
-  gap: 24px;
-  font-size: 13px;
-  color: var(--text-secondary);
+  gap: 20px;
+  flex: 0 0 auto;
 }
 
 .site-footer .links a:hover {
@@ -1266,7 +1319,12 @@ body.dragging-panel iframe {
   }
 
   .search-form-wrap {
-    padding: 12px 20px 0;
+    padding: 10px 20px 6px;
+  }
+
+  .more-filters {
+    left: 20px;
+    right: 20px;
   }
 
   .list-panel {
@@ -1276,7 +1334,7 @@ body.dragging-panel iframe {
   }
 
   .site-footer {
-    padding: 24px 20px;
+    padding: 6px 20px;
   }
 }
 
@@ -1299,7 +1357,16 @@ body.dragging-panel iframe {
   }
 
   .search-form-wrap {
-    padding: 10px 12px 0;
+    padding: 8px 12px 4px;
+  }
+
+  .more-filters {
+    left: 12px;
+    right: 12px;
+  }
+
+  .site-footer {
+    display: none;
   }
 
   .form-field {
@@ -1318,8 +1385,6 @@ body.dragging-panel iframe {
     width: auto !important;
     min-width: 0;
     padding: 8px 12px 90px;
-    max-height: none;
-    position: static;
   }
 
   .map-panel {

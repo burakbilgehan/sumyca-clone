@@ -90,6 +90,29 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
   const num = (v: string | number) => (v === '' || v === 0 ? '' : String(v))
 
   const activeSources = form.sources.length ? form.sources : ALL_SOURCE_IDS
+  // toggle üstünde rozet: kapalı panelde hangi ek filtrelerin aktif olduğu görünsün
+  const extraCount = [form.minCost, form.maxMinuteWalk, form.buildYearAfter, form.minSize, form.maxSize, form.instantBooking ? 1 : 0, form.sources.length].filter(Boolean).length
+
+  // dışarı tıklama ve Escape ile paneli kapat
+  const moreRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!showMore) return
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (moreRef.current?.contains(t)) return
+      if ((t as HTMLElement).closest?.('.more-filters-toggle')) return
+      setShowMore(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowMore(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [showMore])
   const toggleSource = (id: SourceId) => {
     const next = activeSources.includes(id) ? activeSources.filter((s) => s !== id) : [...activeSources, id]
     onChange({ sources: next.length === ALL_SOURCE_IDS.length ? [] : next })
@@ -190,14 +213,15 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
         </button>
       </form>
 
-      <div>
-        <button type="button" className="more-filters-toggle" onClick={() => setShowMore((v) => !v)}>
+      <div className="more-filters-row">
+        <button type="button" className="more-filters-toggle" onClick={() => setShowMore((v) => !v)} aria-expanded={showMore}>
           <span>{showMore ? '−' : '+'}</span> More filters
+          {extraCount > 0 && <span className="count">{extraCount}</span>}
         </button>
       </div>
 
       {showMore && (
-        <div className="more-filters">
+        <div className="more-filters" ref={moreRef} role="dialog" aria-label="More filters">
           <Field label="Min rent /night (¥)">
             <input
               type="number"
@@ -280,6 +304,21 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
               })}
             </div>
             <div className="sources-hint">If no source is selected, all sources are searched.</div>
+          </div>
+          <div className="more-filters-actions">
+            <button type="button" onClick={() => setShowMore(false)}>
+              Close
+            </button>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => {
+                setShowMore(false)
+                onSearch()
+              }}
+            >
+              Search
+            </button>
           </div>
         </div>
       )}
