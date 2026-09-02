@@ -29,7 +29,8 @@ export function buildSearchParams(form: SearchFormState, page: number, itemsPerP
     radius: form.radius,
     buildYearAfter: form.buildYearAfter,
     minNumGuests: form.numGuests,
-    sort: form.sort,
+    // 'newest' istemci tarafında uygulanır; API yalnızca fiyat sıralamasını bilir
+    sort: form.sort === 'newest' ? 'costAsc' : form.sort,
     page,
     itemsPerPage,
     locale: 'en',

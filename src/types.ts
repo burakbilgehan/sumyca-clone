@@ -42,6 +42,8 @@ export interface Listing {
   address: ListingAddress
   listingSale: { listingSaleType: string }
   reservationApprovalRequiredSetting: string
+  /** ilanın kaynağa eklenme zamanı, unix saniye; yalnızca Sumyca sağlıyor */
+  createdAt?: number
 }
 
 export interface ListingsWithRoomType {
@@ -100,6 +102,8 @@ export interface PlaceSuggestion {
   label: string
 }
 
+export type SortKey = 'costAsc' | 'costDesc' | 'newest'
+
 export interface SearchFormState {
   locationName: string
   startDate: string
@@ -113,7 +117,7 @@ export interface SearchFormState {
   buildYearAfter: number
   radius: number
   instantBooking: boolean
-  sort: 'costAsc' | 'costDesc'
+  sort: SortKey
   /** boş dizi = tüm kaynaklar */
   sources: SourceId[]
 }

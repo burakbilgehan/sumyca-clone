@@ -54,6 +54,7 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
   const chips = amenityChips(listing)
   const url = listing.sourceUrl
   const priceNote = SOURCES.find((s) => s.id === listing.source)?.priceNote
+  const listedAt = listing.createdAt ? new Date(listing.createdAt * 1000) : null
 
   return (
     <div
@@ -124,6 +125,12 @@ export function ListingCard({ listing, quote, highlighted, onHover, onSelect }: 
           {station && <>{stationLabel(station)} / </>}
           {listing.address.prefecture.prefectureName} {listing.address.city.cityName}
         </div>
+
+        {listedAt && (
+          <div className="listing-listed">
+            Listed {listedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+          </div>
+        )}
 
         <TransitBox listing={listing} />
 

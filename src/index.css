@@ -487,6 +487,7 @@ body.dragging-panel iframe {
 .density-xs .transit-box,
 .density-xs .listing-chips,
 .density-xs .listing-sub,
+.density-xs .listing-listed,
 .density-xs .listing-footer .badge {
   display: none;
 }
@@ -650,6 +651,12 @@ body.dragging-panel iframe {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.listing-listed {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: -4px 0 8px;
 }
 
 .listing-chips {

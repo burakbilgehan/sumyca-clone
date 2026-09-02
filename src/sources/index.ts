@@ -48,8 +48,13 @@ function unsupportedFor(a: SourceAdapter, form: SearchFormState): string[] {
 }
 
 export function sortListings(listings: UniversalListing[], sort: SearchFormState['sort']): UniversalListing[] {
+  const byCost = (a: UniversalListing, b: UniversalListing) => monthlyAmount({ listing: a }) - monthlyAmount({ listing: b })
+  if (sort === 'newest') {
+    // tarihi olmayanlar (Sumyca dışı kaynaklar) en sona; eşitlikte ucuz önce
+    return [...listings].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0) || byCost(a, b))
+  }
   const dir = sort === 'costDesc' ? -1 : 1
-  return [...listings].sort((a, b) => dir * (monthlyAmount({ listing: a }) - monthlyAmount({ listing: b })))
+  return [...listings].sort((a, b) => dir * byCost(a, b))
 }
 
 // Farklı kaynaklardan gelen sonuçlar için arama merkezi: client-radius'lu kaynakların koordinat medyanı

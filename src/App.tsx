@@ -48,7 +48,7 @@ function readInitialForm(): SearchFormState {
     maxCost: num('maxCost'),
     maxMinuteWalk: num('maxMinuteWalk'),
     buildYearAfter: num('buildYearAfter'),
-    sort: qs.get('sort') === 'costDesc' ? 'costDesc' : 'costAsc',
+    sort: (['costAsc', 'costDesc', 'newest'] as const).find((s) => s === qs.get('sort')) ?? 'costAsc',
     sources: sourcesParam as SourceId[],
   }
 }

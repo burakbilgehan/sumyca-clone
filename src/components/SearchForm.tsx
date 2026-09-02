@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { PlaceSuggestion, SearchFormState } from '../types'
+import type { PlaceSuggestion, SearchFormState, SortKey } from '../types'
 import { autocompletePlace } from '../api'
 import { ALL_SOURCE_IDS, SOURCES } from '../sources'
 import type { SourceId } from '../sources'
@@ -178,10 +178,11 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
         <Field label="Sort">
           <select
             value={form.sort}
-            onChange={(e) => onApply({ ...form, sort: e.target.value as 'costAsc' | 'costDesc' })}
+            onChange={(e) => onApply({ ...form, sort: e.target.value as SortKey })}
           >
             <option value="costAsc">Price: low to high</option>
             <option value="costDesc">Price: high to low</option>
+            <option value="newest">Newest listed</option>
           </select>
         </Field>
         <button className="search-submit" type="submit" disabled={loading}>
