@@ -119,13 +119,18 @@ function FitBounds({ entries, fitKey }: { entries: MapEntry[]; fitKey: number })
     if (list.length === 0) return
     const bounds = L.latLngBounds(list.map((e) => [e.listing.location.lat, e.listing.location.lng] as [number, number]))
     if (list.length === 1) {
-      map.setView(bounds.getCenter(), 14)
+      map.flyTo(bounds.getCenter(), 14, { duration: 0.8 })
     } else {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+      map.flyToBounds(bounds, { padding: [40, 40], maxZoom: 14, duration: 0.8 })
     }
   }, [fitKey, map])
   return null
 }
+
+// Karttan/karttan seçimde hedef zoom: bölgeyi tanıyacak kadar geniş, ilanı ayırt edecek kadar yakın
+const FOCUS_ZOOM = 15
+const FOCUS_ZOOM_MIN = 14
+const FOCUS_ZOOM_MAX = 16
 
 function FocusHandler({
   focus,
@@ -136,15 +141,38 @@ function FocusHandler({
   registryRef: React.MutableRefObject<MarkerRegistry>
   clusterRef: React.MutableRefObject<ClusterGroup | null>
 }) {
+  const map = useMap()
   useEffect(() => {
     if (!focus) return
     const marker = registryRef.current.get(focus.id)
     const group = clusterRef.current
     if (!marker || !group) return
-    group.zoomToShowLayer(marker, () => {
-      marker.openPopup()
-    })
-  }, [focus, registryRef, clusterRef])
+
+    // Marker cluster içindeyse zoom yapmak yerine kümeyi spiderfy et; böylece semt bağlamı kaybolmaz
+    const reveal = () => {
+      const parent = group.getVisibleParent(marker) as L.Marker | L.MarkerCluster | null
+      if (!parent || parent === marker) {
+        marker.openPopup()
+        return
+      }
+      group.once('spiderfied', () => marker.openPopup())
+      ;(parent as L.MarkerCluster).spiderfy()
+    }
+
+    const target = marker.getLatLng()
+    const current = map.getZoom()
+    const zoom = current >= FOCUS_ZOOM_MIN && current <= FOCUS_ZOOM_MAX ? current : FOCUS_ZOOM
+    const alreadyThere = map.getZoom() === zoom && map.getCenter().distanceTo(target) < 5
+    if (alreadyThere) {
+      reveal()
+      return
+    }
+    map.once('moveend', reveal)
+    map.flyTo(target, zoom, { duration: 0.7 })
+    return () => {
+      map.off('moveend', reveal)
+    }
+  }, [focus, registryRef, clusterRef, map])
   return null
 }
 
@@ -282,7 +310,7 @@ export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHo
   const center: [number, number] = entries.length > 0 ? [entries[0].listing.location.lat, entries[0].listing.location.lng] : [35.6812, 139.7671]
   return (
     <div className="map-root">
-      <MapContainer center={center} zoom={13} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }}>
+      <MapContainer center={center} zoom={13} scrollWheelZoom={true} zoomSnap={0.5} zoomDelta={0.5} wheelPxPerZoomLevel={90} style={{ width: '100%', height: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
