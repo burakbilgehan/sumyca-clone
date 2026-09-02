@@ -127,49 +127,67 @@ function FitBounds({ entries, fitKey }: { entries: MapEntry[]; fitKey: number })
   return null
 }
 
-// Karttan/karttan seçimde hedef zoom: bölgeyi tanıyacak kadar geniş, ilanı ayırt edecek kadar yakın
-const FOCUS_ZOOM = 15
-const FOCUS_ZOOM_MIN = 14
-const FOCUS_ZOOM_MAX = 16
+// Seçimde hedef zoom: ilçe/semt ölçeği; ilan kümedeyse spiderfy ile ayrıştırılır
+const FOCUS_ZOOM = 13
+
+// Marker cluster içindeyse zoom yapmak yerine kümeyi spiderfy et; böylece semt bağlamı kaybolmaz
+function revealMarker(group: ClusterGroup, marker: L.Marker) {
+  const parent = group.getVisibleParent(marker) as L.Marker | L.MarkerCluster | null
+  if (!parent || parent === marker) {
+    marker.openPopup()
+    return
+  }
+  group.once('spiderfied', () => marker.openPopup())
+  ;(parent as L.MarkerCluster).spiderfy()
+}
 
 function FocusHandler({
   focus,
+  entries,
   registryRef,
   clusterRef,
 }: {
   focus: FocusTarget | null
+  entries: MapEntry[]
   registryRef: React.MutableRefObject<MarkerRegistry>
   clusterRef: React.MutableRefObject<ClusterGroup | null>
 }) {
   const map = useMap()
+  const flyingRef = useRef(false)
+
+  // Sayfalama sırasında gelen yeni marker'lar kümeyi yeniden kurup spider'ı ve popup'ı kapatır; seçimi geri getir
+  useEffect(() => {
+    if (!focus) return
+    const marker = registryRef.current.get(focus.id)
+    const group = clusterRef.current
+    if (!marker || !group || marker.isPopupOpen() || flyingRef.current) return
+    if (!map.getBounds().contains(marker.getLatLng())) return
+    const t = window.setTimeout(() => revealMarker(group, marker), 50)
+    return () => window.clearTimeout(t)
+  }, [entries, focus, registryRef, clusterRef, map])
+
   useEffect(() => {
     if (!focus) return
     const marker = registryRef.current.get(focus.id)
     const group = clusterRef.current
     if (!marker || !group) return
-
-    // Marker cluster içindeyse zoom yapmak yerine kümeyi spiderfy et; böylece semt bağlamı kaybolmaz
     const reveal = () => {
-      const parent = group.getVisibleParent(marker) as L.Marker | L.MarkerCluster | null
-      if (!parent || parent === marker) {
-        marker.openPopup()
-        return
-      }
-      group.once('spiderfied', () => marker.openPopup())
-      ;(parent as L.MarkerCluster).spiderfy()
+      flyingRef.current = false
+      revealMarker(group, marker)
     }
 
     const target = marker.getLatLng()
-    const current = map.getZoom()
-    const zoom = current >= FOCUS_ZOOM_MIN && current <= FOCUS_ZOOM_MAX ? current : FOCUS_ZOOM
+    const zoom = FOCUS_ZOOM
     const alreadyThere = map.getZoom() === zoom && map.getCenter().distanceTo(target) < 5
     if (alreadyThere) {
       reveal()
       return
     }
+    flyingRef.current = true
     map.once('moveend', reveal)
     map.flyTo(target, zoom, { duration: 0.7 })
     return () => {
+      flyingRef.current = false
       map.off('moveend', reveal)
     }
   }, [focus, registryRef, clusterRef, map])
@@ -253,12 +271,16 @@ function MarkersLayer({
         iconAnchor: [55, 34],
       })
       marker.setIcon(icon)
-      marker.bindPopup(popupHtml(e, timesMap[e.listing.id]), {
-        minWidth: 230,
-        maxWidth: 280,
-        closeButton: true,
-        closeOnClick: true,
-      })
+      // içerik değişmediyse yeniden bağlama; bindPopup açık popup'ı kapatır ve sayfa yüklenirken seçimi düşürür
+      const html = popupHtml(e, timesMap[e.listing.id])
+      if (marker.getPopup()?.getContent() !== html) {
+        marker.bindPopup(html, {
+          minWidth: 230,
+          maxWidth: 280,
+          closeButton: true,
+          closeOnClick: true,
+        })
+      }
     }
 
     for (const [id, marker] of markers) {
@@ -322,7 +344,7 @@ export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHo
         <LandmarkLayer />
         <TransitLayer />
         <MarkersLayer entries={entries} hoveredId={hoveredId} onHover={onHover} onSelect={onSelect} registryRef={registryRef} clusterRef={clusterRef} timesMap={timesMap} />
-        <FocusHandler focus={focus} registryRef={registryRef} clusterRef={clusterRef} />
+        <FocusHandler focus={focus} entries={entries} registryRef={registryRef} clusterRef={clusterRef} />
         <SearchAreaButton onSearchArea={onSearchArea} searchingArea={searchingArea} />
       </MapContainer>
       <div className="map-legend">
