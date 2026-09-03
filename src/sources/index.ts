@@ -31,6 +31,10 @@ export function applyUniversalFilters(listings: UniversalListing[], form: Search
     if (form.buildYearAfter && l.builtAt.buildYear && l.builtAt.buildYear < form.buildYearAfter) return false
     if (form.numGuests && l.maxNumberOfGuests && l.maxNumberOfGuests < form.numGuests) return false
     if (form.instantBooking && l.reservationApprovalRequiredSetting !== 'ImmediateReservationRequest') return false
+    if (form.preferenceKeys.length) {
+      const have = new Set(l.keywords.map((k) => k.key))
+      for (const k of form.preferenceKeys) if (!have.has(k)) return false
+    }
     return true
   })
 }
@@ -44,6 +48,7 @@ function unsupportedFor(a: SourceAdapter, form: SearchFormState): string[] {
   if (form.buildYearAfter && !a.supports.buildYear) out.push('build year')
   if (form.numGuests > 2 && !a.supports.guestsOver2) out.push('3+ guests')
   if (form.instantBooking && !a.supports.instant) out.push('instant booking')
+  if (form.preferenceKeys.length && !a.supports.preference) out.push('preferences')
   return out
 }
 

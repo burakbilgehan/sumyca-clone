@@ -35,6 +35,8 @@ export interface SourceAdapter {
     buildYear: boolean
     guestsOver2: boolean
     instant: boolean
+    /** keyword/özellik (preference) filtresini destekler */
+    preference: boolean
   }
   search(form: SearchFormState, page: number): Promise<SourceSearchResult>
 }

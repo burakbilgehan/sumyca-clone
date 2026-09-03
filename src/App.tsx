@@ -4,6 +4,7 @@ import { fetchQuotes, reverseGeocode } from './api'
 import { addDays, todayStr } from './price'
 import { ALL_SOURCE_IDS, SOURCES, finalizeListings, searchAllSources } from './sources'
 import type { SourceId, UniversalListing } from './sources'
+import { ALL_PREFERENCE_KEYS } from './preferences'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { SearchForm } from './components/SearchForm'
@@ -28,6 +29,7 @@ function defaultForm(): SearchFormState {
     instantBooking: false,
     sort: 'costAsc',
     sources: [],
+    preferenceKeys: [],
   }
 }
 
@@ -39,6 +41,7 @@ function readInitialForm(): SearchFormState {
     return v ? Number(v) || 0 : 0
   }
   const sourcesParam = (qs.get('sources') ?? '').split(',').filter((s) => (ALL_SOURCE_IDS as string[]).includes(s))
+  const prefParam = (qs.get('pref') ?? '').split(',').filter((k) => ALL_PREFERENCE_KEYS.has(k))
   return {
     ...base,
     locationName: qs.get('query') ?? base.locationName,
@@ -50,6 +53,7 @@ function readInitialForm(): SearchFormState {
     buildYearAfter: num('buildYearAfter'),
     sort: (['costAsc', 'costDesc', 'newest'] as const).find((s) => s === qs.get('sort')) ?? 'costAsc',
     sources: sourcesParam as SourceId[],
+    preferenceKeys: prefParam,
   }
 }
 
@@ -64,6 +68,7 @@ function syncUrl(form: SearchFormState) {
   if (form.buildYearAfter) qs.set('buildYearAfter', String(form.buildYearAfter))
   qs.set('sort', form.sort)
   if (form.sources.length) qs.set('sources', form.sources.join(','))
+  if (form.preferenceKeys.length) qs.set('pref', form.preferenceKeys.join(','))
   window.history.replaceState(null, '', `${window.location.pathname}?${qs.toString()}`)
 }
 
@@ -245,6 +250,7 @@ export default function App() {
   const onApply = useCallback(
     (next: SearchFormState) => {
       setForm(next)
+      syncUrl(next)
       if (searched) void runSearch(true, next)
     },
     [searched, runSearch],

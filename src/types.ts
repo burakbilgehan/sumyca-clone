@@ -120,4 +120,6 @@ export interface SearchFormState {
   sort: SortKey
   /** boş dizi = tüm kaynaklar */
   sources: SourceId[]
+  /** seçili tercih/özellik keyword key'leri (Sumyca "Preference filter"); boş dizi = filtre yok */
+  preferenceKeys: string[]
 }

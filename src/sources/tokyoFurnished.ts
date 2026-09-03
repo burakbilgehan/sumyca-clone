@@ -89,7 +89,7 @@ export const tokyoFurnishedAdapter: SourceAdapter = {
   perPage: 100,
   clientRadius: true,
   priceNote: 'base rent, utilities may be extra',
-  supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: true, instant: false },
+  supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: true, instant: false, preference: false },
   async search(form: SearchFormState): Promise<SourceSearchResult> {
     const rooms = await loadRooms()
     let list = rooms

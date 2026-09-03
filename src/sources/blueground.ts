@@ -38,7 +38,7 @@ export const bluegroundAdapter: SourceAdapter = {
   perPage: 18,
   clientRadius: true,
   priceNote: 'rent + utilities + insurance',
-  supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: true, instant: false },
+  supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: true, instant: false, preference: false },
   async search(form: SearchFormState, page: number): Promise<SourceSearchResult> {
     if (!WORKER_BASE) return emptyResult('proxy not configured (VITE_WORKER_BASE)')
     if (!/tokyo/i.test(form.locationName)) return emptyResult()

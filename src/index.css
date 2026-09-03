@@ -402,6 +402,138 @@ select {
   margin-top: 6px;
 }
 
+/* ---------- preference filter modal ---------- */
+.pref-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pref-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: min(680px, 100%);
+  max-height: min(80vh, 700px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.pref-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 18px 20px 8px;
+}
+
+.pref-modal-head h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.pref-close {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
+.pref-close:hover {
+  color: var(--text);
+}
+
+.pref-modal-body {
+  overflow-y: auto;
+  padding: 8px 20px 16px;
+}
+
+.pref-cat {
+  margin-top: 14px;
+}
+
+.pref-cat h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.pref-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pref-chip {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.pref-chip:hover {
+  border-color: var(--teal);
+}
+
+.pref-chip.on {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.pref-modal-actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pref-modal-actions button {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.pref-modal-actions .pref-set {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.pref-modal-actions .pref-set:hover {
+  background: var(--teal-dark);
+}
+
+.pref-modal-actions .pref-clear:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
 /* ---------- results layout ---------- */
 .results-layout {
   flex: 1;

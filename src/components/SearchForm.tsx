@@ -3,6 +3,7 @@ import type { PlaceSuggestion, SearchFormState, SortKey } from '../types'
 import { autocompletePlace } from '../api'
 import { ALL_SOURCE_IDS, SOURCES } from '../sources'
 import type { SourceId } from '../sources'
+import { ALL_PREFERENCE_KEYS, PREFERENCE_CATEGORIES } from '../preferences'
 
 interface Props {
   form: SearchFormState
@@ -32,6 +33,8 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
   const [open, setOpen] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
+  const [prefOpen, setPrefOpen] = useState(false)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
   const wrapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -91,7 +94,40 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
 
   const activeSources = form.sources.length ? form.sources : ALL_SOURCE_IDS
   // toggle üstünde rozet: kapalı panelde hangi ek filtrelerin aktif olduğu görünsün
-  const extraCount = [form.minCost, form.maxMinuteWalk, form.buildYearAfter, form.minSize, form.maxSize, form.instantBooking ? 1 : 0, form.sources.length].filter(Boolean).length
+  const extraCount = [form.minCost, form.maxMinuteWalk, form.buildYearAfter, form.minSize, form.maxSize, form.instantBooking ? 1 : 0, form.sources.length, form.preferenceKeys.length].filter(Boolean).length
+
+  const openPrefs = () => {
+    setPicked(new Set(form.preferenceKeys))
+    setPrefOpen(true)
+  }
+  const togglePick = (key: string) => {
+    setPicked((prev) => {
+      const n = new Set(prev)
+      if (n.has(key)) n.delete(key)
+      else n.add(key)
+      return n
+    })
+  }
+  const closePrefs = () => {
+    setPrefOpen(false)
+    setPicked(new Set())
+  }
+  const clearPrefs = () => setPicked(new Set())
+  const applyPrefs = () => {
+    setPrefOpen(false)
+    const next = { ...form, preferenceKeys: [...picked].filter((k) => ALL_PREFERENCE_KEYS.has(k)) }
+    setPicked(new Set())
+    onApply(next)
+  }
+
+  useEffect(() => {
+    if (!prefOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closePrefs()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [prefOpen])
 
   // dışarı tıklama ve Escape ile paneli kapat
   const moreRef = useRef<HTMLDivElement>(null)
@@ -218,6 +254,10 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
           <span>{showMore ? '−' : '+'}</span> More filters
           {extraCount > 0 && <span className="count">{extraCount}</span>}
         </button>
+        <button type="button" className="more-filters-toggle" onClick={openPrefs} aria-expanded={prefOpen}>
+          Preference filter
+          {form.preferenceKeys.length > 0 && <span className="count">{form.preferenceKeys.length}</span>}
+        </button>
       </div>
 
       {showMore && (
@@ -319,6 +359,50 @@ export function SearchForm({ form, onChange, onApply, onSearch, loading }: Props
             >
               Search
             </button>
+          </div>
+        </div>
+      )}
+
+      {prefOpen && (
+        <div className="pref-overlay" onMouseDown={(e) => e.target === e.currentTarget && closePrefs()}>
+          <div className="pref-modal" role="dialog" aria-modal="true" aria-label="Preference filter">
+            <div className="pref-modal-head">
+              <h2>Preference filter</h2>
+              <button type="button" className="pref-close" onClick={closePrefs} aria-label="Close">
+                ×
+              </button>
+            </div>
+            <div className="pref-modal-body">
+              {PREFERENCE_CATEGORIES.map((cat) => (
+                <section className="pref-cat" key={cat.id}>
+                  <h3>{cat.name}</h3>
+                  <div className="pref-chips">
+                    {cat.options.map((opt) => {
+                      const on = picked.has(opt.key)
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          className={`pref-chip${on ? ' on' : ''}`}
+                          aria-pressed={on}
+                          onClick={() => togglePick(opt.key)}
+                        >
+                          {opt.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+            <div className="pref-modal-actions">
+              <button type="button" className="pref-clear" onClick={clearPrefs}>
+                Clear
+              </button>
+              <button type="button" className="pref-set" onClick={applyPrefs}>
+                Set
+              </button>
+            </div>
           </div>
         </div>
       )}

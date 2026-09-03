@@ -22,7 +22,7 @@ export const hmletAdapter: SourceAdapter = {
   perPage: 12,
   clientRadius: true,
   priceNote: 'utilities incl., one-time service fee extra',
-  supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: false, instant: false },
+  supports: { cost: true, size: true, walk: false, buildYear: false, guestsOver2: false, instant: false, preference: false },
   async search(form: SearchFormState, page: number): Promise<SourceSearchResult> {
     const gcc = CITY_IDS.find(([re]) => re.test(form.locationName))?.[1]
     if (!gcc) return emptyResult()

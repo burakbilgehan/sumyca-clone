@@ -28,7 +28,7 @@ export const exflatsAdapter: SourceAdapter = {
   perPage: 100,
   clientRadius: true,
   priceNote: 'utilities incl., cleaning fee extra',
-  supports: { cost: true, size: true, walk: true, buildYear: false, guestsOver2: true, instant: false },
+  supports: { cost: true, size: true, walk: true, buildYear: false, guestsOver2: true, instant: false, preference: false },
   async search(form: SearchFormState): Promise<SourceSearchResult> {
     if (!/sapporo|札幌/i.test(form.locationName)) return emptyResult()
     if (!WORKER_BASE) return emptyResult('proxy not configured (VITE_WORKER_BASE)')

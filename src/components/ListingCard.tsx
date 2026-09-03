@@ -13,7 +13,7 @@ interface Props {
   onSelect: (id: string) => void
 }
 
-const PRIORITY_KEYS = ['FixedWiFi', 'MobileWiFi', 'AirConditioner', 'WashingMachine', 'Refrigerator', 'Microwave', 'RiceCooker', 'Dryer', 'AutomaticLock', 'Bidet', 'HotWaterSupply']
+const PRIORITY_KEYS = ['FixedWiFi', 'MobileWiFi', 'AirConditioner', 'WashingMachine', 'Refrigerator', 'Microwave', 'RiceCooker', 'Dryer', 'AutomaticLock', 'Bidet', 'HotWaterSupply', 'BathAndToiletSeparated']
 
 function amenityChips(listing: UniversalListing): string[] {
   const keys = new Set(listing.keywords.map((k) => k.key))
