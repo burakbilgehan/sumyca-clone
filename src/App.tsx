@@ -408,6 +408,7 @@ export default function App() {
               focus={focus}
               fitKey={fitKey}
               searchingArea={searchingArea}
+              draining={draining}
               onHover={setHoveredId}
               onSelect={onSelectListing}
               onSearchArea={onSearchArea}

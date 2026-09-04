@@ -32,6 +32,7 @@ interface Props {
   focus: FocusTarget | null
   fitKey: number
   searchingArea: boolean
+  draining: boolean
   onHover: (id: string | null) => void
   onSelect: (id: string, source: FocusSource) => void
   onSearchArea: (lat: number, lng: number, radiusKm: number) => void
@@ -148,25 +149,37 @@ function revealMarker(group: ClusterGroup, marker: L.Marker) {
 function FocusHandler({
   focus,
   entries,
+  draining,
   registryRef,
   clusterRef,
 }: {
   focus: FocusTarget | null
   entries: MapEntry[]
+  draining: boolean
   registryRef: React.MutableRefObject<MarkerRegistry>
   clusterRef: React.MutableRefObject<ClusterGroup | null>
 }) {
   const map = useMap()
   const flyingRef = useRef(false)
+  const drainingRef = useRef(draining)
+  useEffect(() => {
+    drainingRef.current = draining
+  }, [draining])
 
-  // Sayfalama sırasında gelen yeni marker'lar kümeyi yeniden kurup spider'ı ve popup'ı kapatır; seçimi geri getir
+  // Sayfalama sırasında gelen yeni marker'lar kümeyi yeniden kurup spider'ı ve popup'ı kapatır; seçimi geri getir.
+  // Marker eklemek her zaman aktif spider'ı kapatır (markercluster addLayer => _unspiderfy), bu yüzden drain
+  // devam ederken tekrar açmak sonsuz acil-kapan döngüsü yaratırdı; only re-reveal once draining settles.
   useEffect(() => {
     if (!focus) return
     const marker = registryRef.current.get(focus.id)
     const group = clusterRef.current
     if (!marker || !group || marker.isPopupOpen() || flyingRef.current) return
+    if (drainingRef.current) return
     if (!map.getBounds().contains(marker.getLatLng())) return
-    const t = window.setTimeout(() => revealMarker(group, marker), 50)
+    const t = window.setTimeout(() => {
+      if (flyingRef.current || drainingRef.current || marker.isPopupOpen()) return
+      revealMarker(group, marker)
+    }, 50)
     return () => window.clearTimeout(t)
   }, [entries, focus, registryRef, clusterRef, map])
 
@@ -262,6 +275,7 @@ function MarkersLayer({
     if (!group) return
     const markers = registryRef.current
     const seen = new Set<string>()
+    const pending: L.Marker[] = []
 
     for (const e of entries) {
       seen.add(e.listing.id)
@@ -271,8 +285,8 @@ function MarkersLayer({
         marker.on('mouseover', () => onHover(e.listing.id))
         marker.on('mouseout', () => onHover(null))
         marker.on('click', () => onSelect(e.listing.id, 'map'))
-        group.addLayer(marker)
         markers.set(e.listing.id, marker)
+        pending.push(marker)
       }
       const icon = L.divIcon({
         className: 'price-marker-wrap',
@@ -293,6 +307,10 @@ function MarkersLayer({
       }
     }
 
+    // markercluster her addLayer'da aktif spider'ı kapatır; yeni marker'ları tek seferde ekleyerek
+    // drain sırasındaki gereksiz acil-kapan titreşimlerini bir kerede toplama
+    if (pending.length > 0) group.addLayers(pending)
+
     for (const [id, marker] of markers) {
       if (!seen.has(id)) {
         group.removeLayer(marker)
@@ -311,7 +329,7 @@ function MarkersLayer({
   return null
 }
 
-export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHover, onSelect, onSearchArea }: Props) {
+export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, draining, onHover, onSelect, onSearchArea }: Props) {
   const registryRef = useRef<MarkerRegistry>(new Map())
   const clusterRef = useRef<ClusterGroup | null>(null)
   const [timesMap, setTimesMap] = useState<Record<string, TransitTimes | null>>({})
@@ -354,7 +372,7 @@ export function MapView({ entries, hoveredId, focus, fitKey, searchingArea, onHo
         <LandmarkLayer />
         <TransitLayer />
         <MarkersLayer entries={entries} hoveredId={hoveredId} onHover={onHover} onSelect={onSelect} registryRef={registryRef} clusterRef={clusterRef} timesMap={timesMap} />
-        <FocusHandler focus={focus} entries={entries} registryRef={registryRef} clusterRef={clusterRef} />
+        <FocusHandler focus={focus} entries={entries} draining={draining} registryRef={registryRef} clusterRef={clusterRef} />
         <SearchAreaButton onSearchArea={onSearchArea} searchingArea={searchingArea} />
       </MapContainer>
       <div className="map-legend">
